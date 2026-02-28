@@ -1,182 +1,283 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<title>HAKKA</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-:root{
-  --bg:#0b0d14; --neon:#ff4d6d; --text:#f2f2f2;
-  --card1:#161a2a; --card2:#0f1220;
-}
-body{margin:0;font-family:Segoe UI,sans-serif; background:radial-gradient(circle at top,#14182a,var(--bg)); color:var(--text);}
-.app{max-width:420px;margin:auto;padding:16px;}
-.screen{display:none;animation:fade .3s ease;}
-.screen.active{display:block;}
-@keyframes fade{from{opacity:0;transform:translateY(8px);}to{opacity:1;}}
-.title{text-align:center;font-size:24px;font-weight:700;color:var(--neon);margin-bottom:16px;}
-.card{background:linear-gradient(180deg,var(--card1),var(--card2));border-radius:16px;padding:14px;margin-bottom:14px;transition:.3s;}
-.card:hover{transform:translateY(-2px);box-shadow:0 0 16px rgba(255,77,109,.4);}
-button{background:var(--neon);border:none;color:white;padding:10px;border-radius:12px;cursor:pointer;width:100%;margin-top:8px;}
-input,textarea{width:100%;margin-top:8px;padding:10px;border-radius:12px;border:none;background:#161a2a;color:white;}
-textarea{resize:none;height:70px;}
-.characters-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-.avatar{width:60px;height:60px;border-radius:50%;background-size:cover;background-position:center;border:2px solid var(--neon);margin:0 auto 6px;}
-.chat-message{padding:6px 10px;border-radius:12px;max-width:80%;margin-bottom:6px;word-wrap:break-word;}
-.user-msg{align-self:flex-end;background:var(--neon);}
-.bot-msg{align-self:flex-start;background:#161a2a;border:1px solid var(--neon);}
-.cursor{color:var(--neon);font-weight:bold;}
-</style>
+    <meta charset="UTF-8">
+    <title>AnimeHub: Cinema Mode</title>
+    <style>
+        :root { --bg: #0a0a0c; --card: #15151a; --accent: #ff4757; --text: #fff; --gold: #ffd700; --panel: #111; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; overflow-x: hidden; }
+        
+        #notify-container { position: fixed; top: 20px; right: 20px; z-index: 10000; width: 300px; }
+        .toast { background: #1a1a1a; color: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 5px solid var(--accent); box-shadow: 0 5px 15px rgba(0,0,0,0.3); animation: slideIn 0.3s ease; }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+        #auth-screen { position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: none; justify-content: center; align-items: center; }
+        .auth-box { background: var(--card); padding: 30px; border-radius: 15px; border: 1px solid #333; text-align: center; width: 320px; }
+        
+        nav { display: flex; justify-content: space-between; padding: 10px 5%; background: var(--panel); border-bottom: 1px solid #222; align-items: center; position: sticky; top: 0; z-index: 1000; }
+        .search-box input { width: 250px; padding: 8px 15px; border-radius: 20px; border: 1px solid #333; background: #000; color: #fff; outline: none; }
+        
+        .container { padding: 20px 5%; }
+        .panel { display: none; background: var(--panel); padding: 20px; border-radius: 12px; border: 1px solid #333; margin-bottom: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 25px; }
+        
+        .card { background: var(--card); border-radius: 12px; overflow: hidden; border: 1px solid #222; cursor: pointer; transition: 0.3s; position: relative; }
+        .card:hover { border-color: var(--accent); transform: translateY(-5px); }
+        .card img { width: 100%; height: 280px; object-fit: cover; }
+        .card-info { padding: 12px; text-align: center; }
+
+        .stars { font-size: 18px; margin-top: 5px; color: #444; }
+        .stars span.active { color: var(--gold); }
+        .rating-num { font-size: 13px; color: var(--gold); margin-left: 5px; font-weight: bold; }
+
+        .del-btn { position: absolute; top: 10px; right: 10px; background: var(--accent); color: white; border: none; padding: 5px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; display: none; z-index: 10; }
+        .card:hover .del-btn { display: block; }
+
+        /* МОДАЛЬНОЕ ОКНО С КОММЕНТАРИЯМИ */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 5000; justify-content: center; align-items: center; }
+        .modal-layout { display: flex; width: 95%; max-width: 1200px; height: 85vh; background: #000; border-radius: 15px; overflow: hidden; border: 1px solid #333; }
+        
+        .player-side { flex: 3; display: flex; flex-direction: column; background: #000; position: relative; }
+        .video-wrapper { flex: 1; position: relative; }
+        .video-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+        
+        .comment-side { flex: 1; border-left: 1px solid #222; display: flex; flex-direction: column; background: var(--panel); }
+        .comm-header { padding: 15px; border-bottom: 1px solid #222; font-weight: bold; display: flex; justify-content: space-between; }
+        .comm-list { flex: 1; overflow-y: auto; padding: 15px; font-size: 14px; }
+        .comm-item { margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #222; }
+        .comm-user { color: var(--accent); font-weight: bold; margin-bottom: 3px; display: flex; align-items: center; gap: 5px; }
+        .comm-input-area { padding: 15px; border-top: 1px solid #222; display: flex; gap: 5px; }
+        
+        input, button { padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #333; background: #000; color: #fff; }
+        button { background: var(--accent); border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-mini { width: auto; padding: 5px 15px; background: #222; margin: 0; }
+    </style>
 </head>
 <body>
-<div class="app">
 
-<div id="menu" class="screen active">
-  <h1 class="title">HAKKA</h1>
-  <button onclick="openCharacters()">Персонажи</button>
-  <button onclick="openWorkshop()">Мастерская</button>
+<div id="notify-container"></div>
+
+<div id="auth-screen">
+    <div class="auth-box">
+        <h2 id="auth-title">Вход</h2>
+        <input type="text" id="uName" placeholder="Логин">
+        <input type="password" id="uPass" placeholder="Пароль">
+        <button onclick="auth()" style="width: 100%">ВОЙТИ</button>
+        <p onclick="toggleAuthMode()" style="font-size: 12px; color: gray; cursor: pointer; margin-top: 15px;">Регистрация</p>
+    </div>
 </div>
 
-<div id="characters" class="screen">
-  <h1 class="title">Персонажи</h1>
-  <div id="charactersGrid" class="characters-grid"></div>
-  <button onclick="goMenu()">Назад</button>
+<nav>
+    <h2 onclick="goHome()" style="cursor:pointer; margin:0">ANIME<span style="color:var(--accent)">HUB</span></h2>
+    <div class="search-box"><input type="text" id="searchInput" placeholder="Поиск..." oninput="handleSearch()"></div>
+    <div class="user-info" id="navUser" style="display:none; align-items:center; gap:10px">
+        <img src="" id="myAv" style="width:35px; height:35px; border-radius:50%; border:2px solid var(--accent); cursor:pointer" onclick="showSection('profile')">
+        <span id="userNameShow" style="font-size:14px; font-weight:bold"></span>
+        <button id="admBtn" class="btn-mini" style="display:none" onclick="showSection('admin')">Админ</button>
+        <button class="btn-mini" onclick="logout()">Выход</button>
+    </div>
+</nav>
+
+<div class="container">
+    <div id="sec-profile" class="panel">
+        <h3>Профиль</h3>
+        <input type="text" id="newAvUrl" placeholder="Ссылка на новый аватар (URL)">
+        <button onclick="changeAvatar()">Сохранить</button>
+    </div>
+
+    <div id="sec-admin" class="panel">
+        <h3>Добавить аниме</h3>
+        <input type="text" id="a-title" placeholder="Название">
+        <input type="text" id="a-poster" placeholder="Постер (URL)">
+        <input type="text" id="a-vid" placeholder="Ссылка на видео (src)">
+        <button onclick="addAnime()" style="width:100%">ОПУБЛИКОВАТЬ</button>
+    </div>
+
+    <div id="sec-main" class="grid"></div>
 </div>
 
-<div id="workshop" class="screen">
-  <h1 class="title">Мастерская</h1>
-  <div class="card">
-    <strong>Создать персонажа</strong>
-    <input id="charName" placeholder="Имя">
-    <textarea id="charDesc" placeholder="Описание"></textarea>
-    <input id="charAvatar" placeholder="URL аватара">
-    <button onclick="createCharacter()">Создать</button>
-  </div>
-  <div class="card">
-    <strong style="color:var(--neon)">🚧 Скоро</strong>
-    <p style="opacity:.85">Дополнительные функции</p>
-  </div>
-  <button onclick="goMenu()">Назад</button>
-</div>
-
-<div id="chat" class="screen">
-  <h1 class="title" id="chatTitle"></h1>
-  <div id="chatWindow" style="display:flex;flex-direction:column;"></div>
-  <input id="userMessage" placeholder="Напиши сообщение...">
-  <button onclick="sendMessage()">Отправить</button>
-  <button onclick="goCharacters()">Назад</button>
-</div>
-
+<!-- НОВЫЙ КИНОТЕАТР С ЧАТОМ -->
+<div id="playerModal" class="modal">
+    <div class="modal-layout">
+        <div class="player-side">
+            <div class="comm-header" style="background: rgba(0,0,0,0.5)">
+                <span id="m-title">Название аниме</span>
+                <span onclick="closePlayer()" style="cursor:pointer; color:var(--accent)">Закрыть X</span>
+            </div>
+            <div class="video-wrapper" id="videoArea"></div>
+        </div>
+        
+        <div class="comment-side">
+            <div class="comm-header">Обсуждение</div>
+            <div class="comm-list" id="commList"></div>
+            <div class="comm-input-area">
+                <input type="text" id="commInput" placeholder="Ваш комментарий..." style="flex:1; margin:0">
+                <button onclick="addComment()" class="btn-mini">Отправить</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
-const API = https: "//shelba-hardenable-bell.ngrok-free.dev";
+    const DEFAULT_AVATAR = "https://encrypted-tbn0.gstatic.com";
+    let isRegMode = false, currentUser = null, activeAnimeIdx = null;
+    let users = JSON.parse(localStorage.getItem('p_users')) || [];
+    let anime = JSON.parse(localStorage.getItem('p_anime')) || [];
 
-const canonChars = [
-  {name:"Алукард",desc:"Древний бессмертный вампир.",avatar:"https://i.pinimg.com/736x/ed/ba/36/edba369f339eb95915ea915a8b48eb2e.jpg"},
-  {name:"Риас Гремори",desc:"Харизматичная демонесса.",avatar:"https://zefirka.club/uploads/posts/2022-09/1662219894_4-zefirka-club-p-rias-gremori-na-avu-5.jpg"}
-];
+    function toast(text, err = false) {
+        const c = document.getElementById('notify-container'), d = document.createElement('div');
+        d.className = 'toast'; if(err) d.style.borderLeftColor = 'orange';
+        d.innerText = text; c.appendChild(d); setTimeout(() => d.remove(), 3000);
+    }
 
-const profile = JSON.parse(localStorage.getItem("hakkaProfile")) || {nick:"Игрок"};
-let activeChar=null;
+    function toggleAuthMode() {
+        isRegMode = !isRegMode;
+        document.getElementById('auth-title').innerText = isRegMode ? 'Регистрация' : 'Вход';
+        document.querySelector('#auth-screen button').innerText = isRegMode ? 'СОЗДАТЬ' : 'ВОЙТИ';
+    }
 
-function showScreen(id){
-  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
-}
-function goMenu(){showScreen("menu");}
-function goCharacters(){showScreen("characters");}
+    function auth() {
+        const name = document.getElementById('uName').value.trim(), pass = document.getElementById('uPass').value.trim();
+        if(!name || !pass) return toast("Заполни поля!", true);
+        if(name === 'admin' && pass === 'AnimeMaster_2024!') {
+            currentUser = { name: 'admin', av: DEFAULT_AVATAR, role: 'admin' };
+            saveSession(); return start();
+        }
+        if(isRegMode) {
+            if(users.find(u => u.name.toLowerCase() === name.toLowerCase())) return toast("Ник занят!", true);
+            const newUser = { name, pass, av: DEFAULT_AVATAR, role: 'user' };
+            users.push(newUser); localStorage.setItem('p_users', JSON.stringify(users));
+            currentUser = newUser; saveSession(); start();
+        } else {
+            const found = users.find(u => u.name === name && u.pass === pass);
+            if(found) { currentUser = found; saveSession(); start(); } else toast("Ошибка входа!", true);
+        }
+    }
 
-function openCharacters(){
-  showScreen("characters");
-  renderCharacters();
-}
+    function saveSession() { localStorage.setItem('p_session', JSON.stringify(currentUser)); }
+    function logout() { localStorage.removeItem('p_session'); location.reload(); }
 
-function renderCharacters(){
-  const grid = document.getElementById("charactersGrid");
-  grid.innerHTML="";
-  canonChars.forEach(renderCard);
-  fetch(API+"/character/list/"+profile.nick)
-    .then(r=>r.json())
-    .then(list=>list.forEach(renderCard));
-}
+    function start() {
+        document.getElementById('auth-screen').style.display = 'none';
+        document.getElementById('navUser').style.display = 'flex';
+        document.getElementById('myAv').src = currentUser.av;
+        document.getElementById('userNameShow').innerText = currentUser.name;
+        if(currentUser.role === 'admin') document.getElementById('admBtn').style.display = 'block';
+        render(anime);
+    }
 
-function renderCard(c){
-  const div = document.createElement("div");
-  div.className="card";
-  div.innerHTML=`
-    <div class="avatar" style="background-image:url('${c.avatar}')"></div>
-    <strong>${c.name}</strong>
-    <p style="opacity:.8">${c.desc}</p>
-    <button onclick="openChat('${c.name}')">💬 Написать</button>
-  `;
-  document.getElementById("charactersGrid").appendChild(div);
-}
+    function addAnime() {
+        const t = document.getElementById('a-title').value.trim(), p = document.getElementById('a-poster').value.trim(), v = document.getElementById('a-vid').value.trim();
+        if(t && v) {
+            anime.push({ t, v, i: p || 'https://via.placeholder.com', rate: 0, votes: 0, comments: [] });
+            localStorage.setItem('p_anime', JSON.stringify(anime));
+            render(anime); showSection('main');
+        }
+    }
 
-function openWorkshop(){showScreen("workshop");}
+    function deleteAnime(index, e) {
+        e.stopPropagation();
+        if(confirm("Удалить?")) {
+            anime.splice(index, 1);
+            localStorage.setItem('p_anime', JSON.stringify(anime));
+            render(anime);
+        }
+    }
 
-function createCharacter(){
-  fetch(API+"/character/create",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({
-      user:profile.nick,
-      name:charName.value,
-      description:charDesc.value,
-      avatar:charAvatar.value
-    })
-  }).then(()=>{alert("Персонаж создан!"); renderCharacters();});
-}
+    function setRating(index, stars, e) {
+        e.stopPropagation();
+        const item = anime[index];
+        item.rate = ((item.rate * (item.votes || 0)) + stars) / ((item.votes || 0) + 1);
+        item.votes = (item.votes || 0) + 1;
+        localStorage.setItem('p_anime', JSON.stringify(anime));
+        render(anime);
+    }
 
-function openChat(name){
-  activeChar=name;
-  showScreen("chat");
-  chatTitle.textContent="Чат с "+name;
-  loadChat();
-}
+    function render(data) {
+        const g = document.getElementById('sec-main'); g.style.display = 'grid';
+        const sorted = [...data].sort((a, b) => (b.rate || 0) - (a.rate || 0));
+        g.innerHTML = sorted.map((a) => {
+            const rIdx = anime.indexOf(a);
+            const r = Math.round(a.rate || 0);
+            return `<div class="card" onclick="openPlayer(${rIdx})">
+                ${currentUser?.role === 'admin' ? `<button class="del-btn" onclick="deleteAnime(${rIdx}, event)">🗑</button>` : ''}
+                <img src="${a.i}" onerror="this.src='https://via.placeholder.com?text=No+Poster'">
+                <div class="card-info">
+                    <b>${a.t}</b>
+                    <div class="stars">
+                        ${[1,2,3,4,5].map(s => `<span class="${r >= s ? 'active' : ''}" onclick="setRating(${rIdx}, ${s}, event)">★</span>`).join('')}
+                        <span class="rating-num">${(a.rate || 0).toFixed(1)}</span>
+                    </div>
+                </div>
+            </div>`
+        }).join('');
+    }
 
-function addMsg(type,text){
-  const div=document.createElement("div");
-  div.className="chat-message "+(type==="user"?"user-msg":"bot-msg");
-  div.textContent=text;
-  chatWindow.appendChild(div);
-  chatWindow.scrollTop=chatWindow.scrollHeight;
-}
+    // КОММЕНТАРИИ
+    function openPlayer(idx) {
+        activeAnimeIdx = idx;
+        const a = anime[idx];
+        document.getElementById('m-title').innerText = a.t;
+        document.getElementById('videoArea').innerHTML = `<iframe src="${a.v}" allowfullscreen allow="autoplay"></iframe>`;
+        document.getElementById('playerModal').style.display = 'flex';
+        renderComments();
+    }
 
-function saveMsg(sender,msg){
-  fetch(API+"/chat/save",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({user:profile.nick,character:activeChar,sender,message:msg})
-  });
-}
+    function addComment() {
+        const input = document.getElementById('commInput');
+        const text = input.value.trim();
+        if(!text) return;
+        
+        if(!anime[activeAnimeIdx].comments) anime[activeAnimeIdx].comments = [];
+        anime[activeAnimeIdx].comments.push({ user: currentUser.name, av: currentUser.av, text });
+        localStorage.setItem('p_anime', JSON.stringify(anime));
+        
+        input.value = '';
+        renderComments();
+    }
 
-function loadChat(){
-  fetch(`${API}/chat/load?user=${profile.nick}&character=${activeChar}`)
-    .then(r=>r.json())
-    .then(list=>{
-      chatWindow.innerHTML="";
-      list.forEach(m=>addMsg(m.sender,m.msg));
-    });
-}
+    function renderComments() {
+        const list = document.getElementById('commList');
+        const comms = anime[activeAnimeIdx].comments || [];
+        list.innerHTML = comms.map(c => `
+            <div class="comm-item">
+                <div class="comm-user"><img src="${c.av}" style="width:20px; height:20px; border-radius:50%"> ${c.user}</div>
+                <div>${c.text}</div>
+            </div>
+        `).join('') || '<div style="color:gray; text-align:center">Будь первым, кто оставит отзыв!</div>';
+        list.scrollTop = list.scrollHeight;
+    }
 
-function sendMessage(){
-  const msg=userMessage.value.trim();
-  if(!msg)return;
-  addMsg("user",msg);
-  saveMsg("user",msg);
+    function closePlayer() { document.getElementById('playerModal').style.display = 'none'; document.getElementById('videoArea').innerHTML = ''; }
+    function handleSearch() { const q = document.getElementById('searchInput').value.toLowerCase(); render(anime.filter(a => a.t.toLowerCase().includes(q))); }
+    function goHome() { showSection('main'); }
+    function showSection(id) { 
+        document.querySelectorAll('.panel').forEach(p => p.style.display = 'none'); 
+        const s = document.getElementById('sec-' + id);
+        if(id === 'main') s.style.display = 'grid'; else s.style.display = 'block';
+    }
 
-  fetch(API+"/ask",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({message:msg,character:activeChar,description:""})
-  }).then(r=>r.json())
-    .then(d=>{addMsg("bot",d.answer); saveMsg("bot",d.answer);});
+    function changeAvatar() {
+        const url = document.getElementById('newAvUrl').value.trim();
+        if(url) {
+            currentUser.av = url; document.getElementById('myAv').src = url;
+            const uIdx = users.findIndex(u => u.name === currentUser.name);
+            if(uIdx !== -1) { users[uIdx].av = url; localStorage.setItem('p_users', JSON.stringify(users)); }
+            saveSession(); toast("Аватар обновлен!");
+        }
+    }
 
-  userMessage.value="";
-}
+    window.onload = () => {
+        const saved = localStorage.getItem('p_session');
+        if(saved) { currentUser = JSON.parse(saved); start(); } 
+        else { document.getElementById('auth-screen').style.display = 'flex'; render(anime); }
+    };
 </script>
 </body>
 </html>
+
+
+</html>
+
 
 
