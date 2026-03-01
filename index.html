@@ -2,79 +2,133 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>AnimeHub | Cloud Fix</title>
-    <!-- 1. ПОДКЛЮЧАЕМ FIREBASE ПЕРВЫМ ДЕЛОМ -->
-    <script src="https://www.gstatic.com"></script>
-    <script src="https://www.gstatic.com"></script>
-    
+    <title>AnimeHub | Local Edition</title>
     <style>
-        :root { --bg: #0a0a0c; --card: #15151a; --accent: #ff4757; --text: #fff; }
-        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        :root { --bg: #0a0a0c; --card: #15151a; --accent: #ff4757; --text: #fff; --panel: #111; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; }
+        
+        /* Авторизация */
+        #auth-screen { position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: flex; justify-content: center; align-items: center; }
         .auth-box { background: var(--card); padding: 30px; border-radius: 15px; border: 1px solid #333; text-align: center; width: 320px; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #333; background: #000; color: #fff; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: var(--accent); color: #fff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        nav, .container { display: none; } /* Скрыто до входа */
+        
+        input, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #333; box-sizing: border-box; }
+        input { background: #000; color: #fff; }
+        button { background: var(--accent); color: #fff; border: none; font-weight: bold; cursor: pointer; }
+        
+        nav { display: none; justify-content: space-between; padding: 10px 5%; background: var(--panel); border-bottom: 1px solid #222; align-items: center; }
+        .container { padding: 20px 5%; display: none; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+        
+        .card { background: var(--card); border-radius: 12px; overflow: hidden; border: 1px solid #222; padding: 10px; text-align: center; }
     </style>
 </head>
 <body>
 
+<!-- Экран входа -->
 <div id="auth-screen">
     <div class="auth-box">
         <h2 id="auth-title">Вход</h2>
         <input type="text" id="logName" placeholder="Логин">
         <input type="password" id="logPass" placeholder="Пароль">
-        <button id="mainBtn" onclick="processAuth()">ВОЙТИ</button>
-        <p id="toggleText" onclick="toggleMode()" style="color:gray; cursor:pointer; font-size:12px; margin-top:15px">Регистрация</p>
+        <button onclick="processAuth()">ВОЙТИ</button>
+        <p onclick="toggleMode()" id="toggleText" style="color:gray; cursor:pointer; font-size:12px; margin-top:15px">Регистрация</p>
     </div>
 </div>
 
+<!-- Шапка сайта -->
+<nav id="mainNav">
+    <h2 style="margin:0">ANIME<span style="color:var(--accent)">HUB</span></h2>
+    <button onclick="logout()" style="width:auto; padding: 5px 15px; background:#333">Выход</button>
+</nav>
+
+<!-- Основной контент -->
+<div class="container" id="mainContent">
+    <div id="admin-panel" style="display:none; background:#111; padding:20px; border-radius:12px; margin-bottom:20px; border:1px solid #333">
+        <h3>Добавить аниме</h3>
+        <input type="text" id="a-title" placeholder="Название">
+        <button onclick="addAnime()">Опубликовать</button>
+    </div>
+    <div id="catalog" class="grid"></div>
+</div>
+
 <script>
-    // 2. ОБЪЯВЛЯЕМ ПЕРЕМЕННЫЕ В САМОМ НАЧАЛЕ
+    // 1. ОБЪЯВЛЯЕМ ВСЕ ПЕРЕМЕННЫЕ В НАЧАЛЕ (чтобы не было ошибок в консоли)
     let isReg = false;
+    let animeDB = JSON.parse(localStorage.getItem('p_anime')) || [];
     let currentUser = JSON.parse(localStorage.getItem('p_session'));
 
-    // 3. КОНФИГ
-    const firebaseConfig = {
-      apiKey: "AIzaSyDgbNKx7k6TMk8PhUbKAW_6wYJm-aakA6c",
-      authDomain: "anumehub-f0cd9.firebaseapp.com",
-      projectId: "anumehub-f0cd9",
-      storageBucket: "anumehub-f0cd9.firebasestorage.app",
-      messagingSenderId: "789478887929",
-      appId: "1:789478887929:web:8ec5e4331f456a4d07ed28",
-      databaseURL: "https://anumehub-f0cd9-default-rtdb.europe-west1.firebasedatabase.app"
-    };
-
-    // Проверка загрузки Firebase
-    if (typeof firebase !== 'undefined') {
-        firebase.initializeApp(firebaseConfig);
-        var db = firebase.database();
-    } else {
-        alert("Ошибка: Firebase не загружен. Проверь интернет!");
-    }
-
+    // 2. ФУНКЦИЯ ПЕРЕКЛЮЧЕНИЯ ВХОД/РЕГИСТРАЦИЯ
     function toggleMode() {
         isReg = !isReg;
         document.getElementById('auth-title').innerText = isReg ? "Регистрация" : "Вход";
-        document.getElementById('mainBtn').innerText = isReg ? "СОЗДАТЬ" : "ВОЙТИ";
+        document.getElementById('toggleText').innerText = isReg ? "Уже есть аккаунт? Войти" : "Нет аккаунта? Регистрация";
     }
 
+    // 3. ЛОГИКА АВТОРИЗАЦИИ
     function processAuth() {
         const name = document.getElementById('logName').value.trim();
         const pass = document.getElementById('logPass').value.trim();
 
-        if(!name || !pass) return alert("Заполни поля!");
+        if(!name || !pass) return alert("Заполните поля!");
 
-        currentUser = { name: name, role: (name === 'admin' ? 'admin' : 'user') };
+        // Создаем сессию
+        currentUser = { 
+            name: name, 
+            role: (name === 'admin' && pass === '123') ? 'admin' : 'user' 
+        };
+
         localStorage.setItem('p_session', JSON.stringify(currentUser));
-        
-        alert("Успешный вход! Теперь обнови страницу.");
+        renderApp();
+    }
+
+    // 4. ОТОБРАЖЕНИЕ ПРИЛОЖЕНИЯ
+    function renderApp() {
+        if (!currentUser) return;
+
+        // Скрываем вход, показываем сайт
+        document.getElementById('auth-screen').style.display = 'none';
+        document.getElementById('mainNav').style.display = 'flex';
+        document.getElementById('mainContent').style.display = 'block';
+
+        // Показываем админку только админу
+        if (currentUser.role === 'admin') {
+            document.getElementById('admin-panel').style.display = 'block';
+        }
+
+        renderCards();
+    }
+
+    // 5. КАРТОЧКИ АНИМЕ
+    function renderCards() {
+        const list = document.getElementById('catalog');
+        list.innerHTML = '';
+        animeDB.forEach(a => {
+            list.innerHTML += `<div class="card"><b>${a.t}</b></div>`;
+        });
+    }
+
+    // 6. ДОБАВЛЕНИЕ АНИМЕ
+    function addAnime() {
+        const t = document.getElementById('a-title').value.trim();
+        if(!t) return;
+
+        animeDB.push({ t: t });
+        localStorage.setItem('p_anime', JSON.stringify(animeDB));
+        document.getElementById('a-title').value = '';
+        renderCards();
+    }
+
+    // 7. ВЫХОД
+    function logout() {
+        localStorage.removeItem('p_session');
         location.reload();
     }
 
-    // Если уже залогинен — скрываем вход
-    if(currentUser) {
-        document.getElementById('auth-screen').innerHTML = "<h1>Привет, " + currentUser.name + "! Ты в системе.</h1><button onclick='localStorage.clear(); location.reload();'>Выйти</button>";
-    }
+    // ПРОВЕРКА ПРИ ЗАГРУЗКЕ
+    window.onload = () => {
+        if (currentUser) renderApp();
+    };
 </script>
+
 </body>
 </html>
