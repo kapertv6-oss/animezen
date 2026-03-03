@@ -1,196 +1,176 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AnimeZen — Cloud Cinema</title>
-    
-    <!-- ПОДКЛЮЧЕНИЕ БИБЛИОТЕК (САМЫЙ ВЕРХ) -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Подключение Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AnimeZen — Cloud Cinema</title>
 
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
-    <style>
-        body { background-color: #060606; color: #f0f0f0; font-family: 'Inter', sans-serif; overflow-x: hidden; }
-        .purple-gradient { background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%); }
-        .purple-glow { box-shadow: 0 0 30px rgba(168, 85, 247, 0.3); }
-        .text-purple { color: #a855f7; }
-        .modal { display: none; background: rgba(0,0,0,0.96); backdrop-filter: blur(20px); z-index: 1000; position: fixed; inset: 0; align-items: center; justify-content: center; }
-        .modal.active { display: flex; }
-        .tab-active { border-bottom: 4px solid #a855f7 !important; color: #a855f7 !important; opacity: 1 !important; }
+<!-- Tailwind -->
+<script src="https://cdn.tailwindcss.com"></script>
 
-        /* ТА САМАЯ ПРУЖИНИСТАЯ АНИМАЦИЯ */
-        .anime-card-wrap { transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); will-change: transform; }
-        .anime-card-wrap:hover { transform: translateY(-18px) scale(1.04); z-index: 20; }
-        .anime-card-wrap img { transition: transform 0.9s ease; }
-        .anime-card-wrap:hover img { transform: scale(1.12); }
+<!-- Firebase COMPAT (ВАЖНО!) -->
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
-        .hero-bg { background: linear-gradient(to right, #060606 35%, transparent 100%), url('https://images.alphacoders.com'); background-size: cover; background-position: center; }
-        .search-input { background: rgba(255,255,255,0.03); border: 1px solid rgba(168,85,247,0.1); backdrop-filter: blur(10px); transition: 0.4s; }
-        #playerContainer iframe { width: 100%; height: 100%; border: none; border-radius: 32px; }
-    </style>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+
+<style>
+body { background:#060606; color:#f0f0f0; font-family:'Inter',sans-serif; overflow-x:hidden; }
+.purple-gradient { background:linear-gradient(135deg,#a855f7 0%,#7c3aed 100%); }
+.purple-glow { box-shadow:0 0 30px rgba(168,85,247,.3); }
+.text-purple { color:#a855f7; }
+.modal { display:none; background:rgba(0,0,0,.96); backdrop-filter:blur(20px); position:fixed; inset:0; align-items:center; justify-content:center; }
+.modal.active { display:flex; }
+.tab-active { border-bottom:4px solid #a855f7 !important; color:#a855f7 !important; }
+.anime-card-wrap { transition:.6s cubic-bezier(.175,.885,.32,1.275); }
+.anime-card-wrap:hover { transform:translateY(-18px) scale(1.04); }
+</style>
 </head>
+
 <body>
 
-    <!-- Шапка -->
-    <header class="border-b border-purple-900/20 py-6 px-8 bg-[#0a0a0a]/80 backdrop-blur-2xl sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto flex justify-between items-center">
-            <div class="text-3xl font-black tracking-tighter cursor-pointer shrink-0" onclick="location.reload()">
-                <span class="text-purple italic font-black">ANIME</span>ZEN
-            </div>
-            <div class="hidden md:flex flex-1 max-w-md mx-12"><input type="text" oninput="handleSearch(this.value)" placeholder="Поиск аниме..." class="search-input w-full px-8 py-3.5 rounded-full text-sm outline-none"></div>
-            <div class="flex items-center space-x-5">
-                <a href="https://t.me" target="_blank" class="bg-[#24A1DE] text-white px-6 py-3 rounded-full text-[11px] font-black uppercase shadow-lg">ТЕЛЕГРАМ</a>
-                <a id="adminLink" href="#" onclick="openModal('adminPanel')" class="hidden text-purple font-black border border-purple-500/40 px-6 py-3 rounded-full text-[11px] uppercase">АДМИНКА</a>
-                <button id="authBtn" onclick="openModal('authModal')" class="purple-gradient purple-glow text-white px-9 py-3 rounded-full text-[11px] font-black uppercase tracking-widest">ВОЙТИ</button>
-                <button id="logoutBtn" onclick="handleLogout()" class="hidden text-red-500 font-black text-[11px] uppercase hover:underline">ВЫЙТИ</button>
-            </div>
-        </div>
-    </header>
+<header class="border-b border-purple-900/20 py-6 px-8 bg-[#0a0a0a]/80 backdrop-blur-2xl sticky top-0 z-50">
+<div class="max-w-7xl mx-auto flex justify-between items-center">
+<div class="text-3xl font-black cursor-pointer" onclick="location.reload()">
+<span class="text-purple italic">ANIME</span>ZEN
+</div>
+<div class="flex items-center space-x-5">
+<button id="authBtn" onclick="openModal('authModal')" class="purple-gradient purple-glow text-white px-8 py-3 rounded-full text-xs font-black uppercase">ВОЙТИ</button>
+<button id="logoutBtn" onclick="handleLogout()" class="hidden text-red-500 font-black text-xs uppercase">ВЫЙТИ</button>
+</div>
+</div>
+</header>
 
-    <!-- Главное Меню (Hero) -->
-    <section id="heroSection" class="relative h-[500px] flex items-center shadow-2xl overflow-hidden">
-        <div class="absolute inset-0 hero-bg opacity-50"></div>
-        <div class="relative max-w-7xl mx-auto px-8 w-full">
-            <div class="max-w-2xl">
-                <span class="bg-purple-600 text-white text-[11px] px-4 py-1.5 rounded-lg font-bold uppercase tracking-widest">Cinema Experience</span>
-                <h2 class="text-7xl md:text-9xl font-black mt-6 uppercase italic leading-none tracking-tighter">ANIME<span class="text-purple">ZEN</span></h2>
-                <p class="mt-6 text-gray-400 text-base md:text-lg leading-relaxed max-w-md font-medium">Твоя приватная зона комфорта. Добавляй лучшие тайтлы в облако и смотри их в идеальном качестве.</p>
-            </div>
-        </div>
-    </section>
+<main class="max-w-7xl mx-auto px-8 py-20 min-h-[600px]">
+<h3 class="text-4xl font-black uppercase italic mb-10">ОБЛАКО <span class="text-purple">АНИМЕ</span></h3>
+<div id="animeGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-8"></div>
+</main>
 
-    <!-- Сетка -->
-    <main class="max-w-7xl mx-auto px-8 py-20 min-h-[700px]">
-        <div class="flex items-center space-x-6 mb-16">
-            <div class="h-10 w-2 purple-gradient rounded-full"></div>
-            <h3 id="gridTitle" class="text-4xl font-black uppercase tracking-tighter italic">НЕДАВНИЕ <span class="text-purple">ОБНОВЛЕНИЯ</span></h3>
-        </div>
-        <div id="animeGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-10 text-white"></div>
-    </main>
+<!-- МОДАЛКА -->
+<div id="authModal" class="modal p-4">
+<div class="bg-[#0f0f0f] border border-purple-500/20 w-full max-w-md rounded-[3rem] p-10 relative">
+<button onclick="closeModal('authModal')" class="absolute top-6 right-8 text-3xl text-gray-500">&times;</button>
 
-    <!-- Модалки -->
-    <div id="authModal" class="modal p-4">
-        <div class="bg-[#0f0f0f] border border-purple-500/20 w-full max-w-md rounded-[3.5rem] p-12 relative shadow-2xl">
-            <button onclick="closeModal('authModal')" class="absolute top-10 right-10 text-gray-500 text-3xl hover:text-white">&times;</button>
-            <div class="flex space-x-10 mb-12 border-b border-gray-900 text-white">
-                <button id="tabLogin" onclick="switchAuth('login')" class="pb-4 text-xl font-black tab-active outline-none">ВХОД</button>
-                <button id="tabReg" onclick="switchAuth('reg')" class="pb-4 text-xl font-black text-gray-600 opacity-50 outline-none">РЕГИСТРАЦИЯ</button>
-            </div>
-            <form id="formLogin" class="space-y-6" onsubmit="handleLogin(event)">
-                <input id="loginUser" type="text" placeholder="Логин" class="w-full bg-[#161616] border border-gray-800 rounded-[1.5rem] px-7 py-5 outline-none text-white focus:border-purple-500">
-                <input id="loginPass" type="password" placeholder="Пароль" class="w-full bg-[#161616] border border-gray-800 rounded-[1.5rem] px-7 py-5 outline-none text-white focus:border-purple-500">
-                <button type="submit" class="w-full purple-gradient py-5 rounded-[1.5rem] font-black uppercase tracking-widest shadow-xl">АВТОРИЗАЦИЯ</button>
-            </form>
+<div class="flex space-x-10 mb-10 border-b border-gray-800">
+<button id="tabLogin" onclick="switchAuth('login')" class="pb-3 font-black tab-active">ВХОД</button>
+<button id="tabReg" onclick="switchAuth('reg')" class="pb-3 font-black text-gray-500">РЕГИСТРАЦИЯ</button>
+</div>
 
-            <!-- Регистрация -->
-            <form id="formReg" class="hidden space-y-6" onsubmit="handleRegister(event)">
-                <input id="regUser" type="text" placeholder="Логин" class="w-full bg-[#161616] border border-gray-800 rounded-[1.5rem] px-7 py-5 outline-none text-white focus:border-purple-500">
-                <input id="regPass" type="password" placeholder="Пароль" class="w-full bg-[#161616] border border-gray-800 rounded-[1.5rem] px-7 py-5 outline-none text-white focus:border-purple-500">
-                <button type="submit" class="w-full purple-gradient py-5 rounded-[1.5rem] font-black uppercase tracking-widest shadow-xl">РЕГИСТРАЦИЯ</button>
-            </form>
-        </div>
-    </div>
+<form id="formLogin" class="space-y-6" onsubmit="handleLogin(event)">
+<input id="loginUser" type="email" placeholder="Email" required class="w-full bg-[#161616] rounded-xl px-6 py-4 outline-none">
+<input id="loginPass" type="password" placeholder="Пароль" required class="w-full bg-[#161616] rounded-xl px-6 py-4 outline-none">
+<button type="submit" class="w-full purple-gradient py-4 rounded-xl font-black uppercase">Войти</button>
+</form>
 
-    <script>
-        // Инициализация Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyAAigsanR80Qe2Du4MmAxIMLBghPqy4nXE",
-            databaseURL: "https://animezen-97635-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "animezen-97635"
-        };
-        
-        // Инициализация Firebase
-        const app = firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.database();
+<form id="formReg" class="hidden space-y-6" onsubmit="handleRegister(event)">
+<input id="regUser" type="email" placeholder="Email" required class="w-full bg-[#161616] rounded-xl px-6 py-4 outline-none">
+<input id="regPass" type="password" placeholder="Пароль" required class="w-full bg-[#161616] rounded-xl px-6 py-4 outline-none">
+<button type="submit" class="w-full purple-gradient py-4 rounded-xl font-black uppercase">Создать</button>
+</form>
 
-        // Проверка, если пользователь вошел в систему
-        let isAdmin = localStorage.getItem('isZenAdmin') === 'true';
+</div>
+</div>
 
-        window.onload = function() {
-            renderAnime();
-            checkAdminState();
-        };
+<script>
 
-        // Обработка логина
-        function handleLogin(e) {
-            e.preventDefault();
-            const email = document.getElementById('loginUser').value;
-            const password = document.getElementById('loginPass').value;
-            auth.signInWithEmailAndPassword(email, password)
-                .then(userCredential => {
-                    const user = userCredential.user;
-                    localStorage.setItem('isZenAdmin', 'true');
-                    location.reload();
-                })
-                .catch(error => {
-                    alert('Ошибка доступа!');
-                    console.error(error.message);
-                });
-        }
+// CONFIG
+const firebaseConfig = {
+apiKey: "AIzaSyAAigsanR80Qe2Du4MmAxIMLBghPqy4nXE",
+databaseURL: "https://animezen-97635-default-rtdb.europe-west1.firebasedatabase.app",
+projectId: "animezen-97635"
+};
 
-        // Обработка регистрации
-        function handleRegister(e) {
-            e.preventDefault();
-            const email = document.getElementById('regUser').value;
-            const password = document.getElementById('regPass').value;
-            auth.createUserWithEmailAndPassword(email, password)
-                .then(userCredential => {
-                    const user = userCredential.user;
-                    localStorage.setItem('isZenAdmin', 'true');
-                    location.reload();
-                })
-                .catch(error => {
-                    alert('Ошибка регистрации!');
-                    console.error(error.message);
-                });
-        }
+// INIT
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
 
-        // Отображение аниме
-        function renderAnime() {
-            db.ref('animeList').on('value', (snapshot) => {
-                const grid = document.getElementById('animeGrid');
-                const data = snapshot.val();
-                if (!data) {
-                    grid.innerHTML = '<div class="col-span-full py-32 text-center opacity-10 text-3xl font-black italic uppercase">Облако пусто</div>';
-                    return;
-                }
+// AUTH STATE
+auth.onAuthStateChanged(user => {
+if(user){
+document.getElementById('authBtn').classList.add('hidden');
+document.getElementById('logoutBtn').classList.remove('hidden');
+}else{
+document.getElementById('authBtn').classList.remove('hidden');
+document.getElementById('logoutBtn').classList.add('hidden');
+}
+});
 
-                let html = '';
-                Object.keys(data).reverse().forEach(key => {
-                    const item = data[key];
-                    html += `
-                    <div class="anime-card-wrap relative group">
-                        <div class="cursor-pointer">
-                            <div class="relative overflow-hidden rounded-[2.8rem] aspect-[3/4.3] shadow-2xl">
-                                <img src="${item.img}" class="object-cover w-full h-full">
-                            </div>
-                            <h4 class="mt-6 text-[14px] font-black truncate uppercase tracking-tighter text-center text-white">${item.title}</h4>
-                        </div>
-                    </div>`;
-                });
-                grid.innerHTML = html;
-            });
-        }
+// LOGIN
+function handleLogin(e){
+e.preventDefault();
+const email = loginUser.value;
+const pass = loginPass.value;
 
-        // Проверка состояния администратора
-        function checkAdminState() {
-            if (isAdmin) {
-                document.getElementById('adminLink').classList.remove('hidden');
-                document.getElementById('logoutBtn').classList.remove('hidden');
-                document.getElementById('authBtn').classList.add('hidden');
-            }
-        }
+auth.signInWithEmailAndPassword(email, pass)
+.then(()=>{
+closeModal('authModal');
+})
+.catch(err=>alert(err.message));
+}
 
-        // Открытие и закрытие модальных окон
-        function openModal(id) { document.getElementById(id).classList.add('active'); }
-        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
-    </script>
+// REGISTER
+function handleRegister(e){
+e.preventDefault();
+const email = regUser.value;
+const pass = regPass.value;
+
+auth.createUserWithEmailAndPassword(email, pass)
+.then(()=>{
+closeModal('authModal');
+})
+.catch(err=>alert(err.message));
+}
+
+// LOGOUT
+function handleLogout(){
+auth.signOut();
+}
+
+// RENDER
+function renderAnime(){
+db.ref('animeList').on('value', snap=>{
+const grid = document.getElementById('animeGrid');
+const data = snap.val();
+if(!data){
+grid.innerHTML='<div class="col-span-full text-center opacity-20 text-3xl font-black">Пусто</div>';
+return;
+}
+let html='';
+Object.values(data).reverse().forEach(item=>{
+html+=`
+<div class="anime-card-wrap">
+<div class="overflow-hidden rounded-3xl shadow-2xl">
+<img src="${item.img}" class="w-full h-full object-cover">
+</div>
+<h4 class="mt-4 text-sm font-black text-center uppercase">${item.title}</h4>
+</div>`;
+});
+grid.innerHTML=html;
+});
+}
+renderAnime();
+
+// UI
+function openModal(id){ document.getElementById(id).classList.add('active'); }
+function closeModal(id){ document.getElementById(id).classList.remove('active'); }
+
+function switchAuth(type){
+if(type==='login'){
+formLogin.classList.remove('hidden');
+formReg.classList.add('hidden');
+tabLogin.classList.add('tab-active');
+tabReg.classList.remove('tab-active');
+}else{
+formLogin.classList.add('hidden');
+formReg.classList.remove('hidden');
+tabLogin.classList.remove('tab-active');
+tabReg.classList.add('tab-active');
+}
+}
+
+</script>
+
 </body>
 </html>
-
