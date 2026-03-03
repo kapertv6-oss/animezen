@@ -2,133 +2,246 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>AnimeHub | Local Edition</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AnimeZen — Твой путь в мир аниме</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com" rel="stylesheet">
     <style>
-        :root { --bg: #0a0a0c; --card: #15151a; --accent: #ff4757; --text: #fff; --panel: #111; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; }
+        body { background-color: #060606; color: #f0f0f0; font-family: 'Inter', sans-serif; overflow-x: hidden; }
         
-        /* Авторизация */
-        #auth-screen { position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: flex; justify-content: center; align-items: center; }
-        .auth-box { background: var(--card); padding: 30px; border-radius: 15px; border: 1px solid #333; text-align: center; width: 320px; }
+        /* Цвета и эффекты */
+        .purple-gradient { background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%); }
+        .purple-glow { box-shadow: 0 0 25px rgba(168, 85, 247, 0.4); }
+        .text-purple { color: #a855f7; }
         
-        input, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #333; box-sizing: border-box; }
-        input { background: #000; color: #fff; }
-        button { background: var(--accent); color: #fff; border: none; font-weight: bold; cursor: pointer; }
+        /* Модальные окна */
+        .modal { display: none; background: rgba(0,0,0,0.95); backdrop-filter: blur(15px); z-index: 1000; position: fixed; inset: 0; align-items: center; justify-content: center; }
+        .modal.active { display: flex; }
+        .tab-active { border-bottom: 3px solid #a855f7 !important; color: #a855f7 !important; opacity: 1 !important; }
         
-        nav { display: none; justify-content: space-between; padding: 10px 5%; background: var(--panel); border-bottom: 1px solid #222; align-items: center; }
-        .container { padding: 20px 5%; display: none; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+        /* Анимация карточек */
+        .anime-card-wrap { transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .anime-card-wrap:hover { transform: translateY(-12px); }
         
-        .card { background: var(--card); border-radius: 12px; overflow: hidden; border: 1px solid #222; padding: 10px; text-align: center; }
+        /* Фон Hero */
+        .hero-bg { 
+            background: linear-gradient(to right, #060606 30%, transparent 100%), 
+            url('https://images.alphacoders.com'); 
+            background-size: cover; 
+            background-position: center; 
+        }
+        
+        #playerContainer iframe { width: 100%; height: 100%; border: none; border-radius: 24px; }
+        .search-input { background: rgba(255,255,255,0.03); border: 1px solid rgba(168,85,247,0.1); backdrop-filter: blur(10px); transition: 0.3s; }
+        .search-input:focus { border-color: #a855f7; background: rgba(255,255,255,0.07); }
     </style>
 </head>
 <body>
 
-<!-- Экран входа -->
-<div id="auth-screen">
-    <div class="auth-box">
-        <h2 id="auth-title">Вход</h2>
-        <input type="text" id="logName" placeholder="Логин">
-        <input type="password" id="logPass" placeholder="Пароль">
-        <button onclick="processAuth()">ВОЙТИ</button>
-        <p onclick="toggleMode()" id="toggleText" style="color:gray; cursor:pointer; font-size:12px; margin-top:15px">Регистрация</p>
+    <!-- Шапка -->
+    <header class="border-b border-purple-900/20 py-5 px-6 bg-[#0a0a0a]/80 backdrop-blur-xl sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="text-2xl font-black tracking-tighter cursor-pointer shrink-0" onclick="location.reload()">
+                <span class="text-purple italic font-black">ANIME</span>ZEN
+            </div>
+            
+            <!-- Поиск -->
+            <div class="hidden md:flex flex-1 max-w-md mx-10">
+                <input type="text" oninput="handleSearch(this.value)" placeholder="Поиск любимого аниме..." class="search-input w-full px-7 py-3 rounded-full text-sm outline-none">
+            </div>
+
+            <div class="flex items-center space-x-4">
+                <a href="https://t.me/AnimeZenCinema" target="_blank" class="bg-[#24A1DE] hover:scale-105 text-white px-5 py-2.5 rounded-full text-[10px] font-black uppercase transition-all shadow-lg">ТЕЛЕГРАМ</a>
+                <a id="adminLink" href="#" onclick="toggleModal('adminPanel')" class="hidden text-purple font-black border border-purple-500/30 px-5 py-2.5 rounded-full text-[10px] uppercase hover:bg-purple-500/10 transition">АДМИНКА</a>
+                <button id="authBtn" onclick="toggleModal('authModal')" class="purple-gradient purple-glow hover:scale-110 text-white px-8 py-2.5 rounded-full text-[10px] font-black uppercase transition-all">ВОЙТИ</button>
+                <button id="logoutBtn" onclick="handleLogout()" class="hidden text-red-500 font-black text-[10px] uppercase hover:underline transition">ВЫЙТИ</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Блок -->
+    <section id="heroSection" class="relative h-[450px] flex items-center">
+        <div class="absolute inset-0 hero-bg opacity-40"></div>
+        <div class="relative max-w-7xl mx-auto px-6 w-full">
+            <div class="max-w-xl">
+                <span class="bg-purple-600 text-white text-[10px] px-3 py-1 rounded-md font-bold uppercase tracking-widest">Premium Edition</span>
+                <h2 class="text-7xl md:text-8xl font-black mt-4 uppercase italic leading-none tracking-tighter">ANIME<span class="text-purple">ZEN</span></h2>
+                <p class="mt-5 text-gray-400 text-sm md:text-base leading-relaxed max-w-sm">Твой личный кинотеатр. Добавляй любимые серии и смотри их в одно касание.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Сетка контента -->
+    <main class="max-w-7xl mx-auto px-6 py-16 min-h-[600px]">
+        <div class="flex items-center space-x-4 mb-12">
+            <div class="h-8 w-1.5 purple-gradient rounded-full"></div>
+            <h3 id="gridTitle" class="text-3xl font-black uppercase tracking-tighter italic">НЕДАВНИЕ <span class="text-purple">ОБНОВЛЕНИЯ</span></h3>
+        </div>
+        <div id="animeGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-8 text-white">
+            <!-- Сюда попадут аниме -->
+        </div>
+    </main>
+
+    <!-- Модальное окно Входа и Регистрации -->
+    <div id="authModal" class="modal p-4">
+        <div class="bg-[#0f0f0f] border border-purple-500/20 w-full max-w-md rounded-[3rem] p-10 relative shadow-2xl">
+            <button onclick="toggleModal('authModal')" class="absolute top-8 right-8 text-gray-500 text-2xl hover:text-white transition">&times;</button>
+            
+            <div class="flex space-x-8 mb-10 border-b border-gray-900">
+                <button id="tabLogin" onclick="switchAuth('login')" class="pb-3 text-lg font-black tab-active transition-all outline-none">ВХОД</button>
+                <button id="tabReg" onclick="switchAuth('reg')" class="pb-3 text-lg font-black text-gray-600 opacity-50 hover:opacity-100 transition-all outline-none">РЕГИСТРАЦИЯ</button>
+            </div>
+
+            <!-- Форма Входа -->
+            <form id="formLogin" class="space-y-5" onsubmit="handleLogin(event)">
+                <input id="loginUser" type="text" placeholder="Логин" class="w-full bg-[#161616] border border-gray-800 rounded-2xl px-6 py-4 outline-none text-white focus:border-purple-500 transition-all" required>
+                <input id="loginPass" type="password" placeholder="Пароль" class="w-full bg-[#161616] border border-gray-800 rounded-2xl px-6 py-4 outline-none text-white focus:border-purple-500 transition-all" required>
+                <button type="submit" class="w-full purple-gradient py-5 rounded-2xl font-black uppercase tracking-widest shadow-lg hover:scale-[1.02] transition-all">ВОЙТИ</button>
+            </form>
+
+            <!-- Форма Регистрации -->
+            <form id="formReg" class="hidden space-y-5" onsubmit="event.preventDefault(); alert('Регистрация временно ограничена')">
+                <input type="text" placeholder="Придумайте логин" class="w-full bg-[#161616] border border-gray-800 rounded-2xl px-6 py-4 outline-none text-white focus:border-purple-500 transition-all" required>
+                <input type="email" placeholder="Email адрес" class="w-full bg-[#161616] border border-gray-800 rounded-2xl px-6 py-4 outline-none text-white focus:border-purple-500 transition-all" required>
+                <input type="password" placeholder="Придумайте пароль" class="w-full bg-[#161616] border border-gray-800 rounded-2xl px-6 py-4 outline-none text-white focus:border-purple-500 transition-all" required>
+                <button type="submit" class="w-full bg-gray-800 py-5 rounded-2xl font-black uppercase tracking-widest transition-all">СОЗДАТЬ АККАУНТ</button>
+            </form>
+        </div>
     </div>
-</div>
 
-<!-- Шапка сайта -->
-<nav id="mainNav">
-    <h2 style="margin:0">ANIME<span style="color:var(--accent)">HUB</span></h2>
-    <button onclick="logout()" style="width:auto; padding: 5px 15px; background:#333">Выход</button>
-</nav>
-
-<!-- Основной контент -->
-<div class="container" id="mainContent">
-    <div id="admin-panel" style="display:none; background:#111; padding:20px; border-radius:12px; margin-bottom:20px; border:1px solid #333">
-        <h3>Добавить аниме</h3>
-        <input type="text" id="a-title" placeholder="Название">
-        <button onclick="addAnime()">Опубликовать</button>
+    <!-- Админка -->
+    <div id="adminPanel" class="modal p-4">
+        <div class="bg-[#0a0a0a] border-2 border-purple-600/30 w-full max-w-xl rounded-[3rem] p-10 relative">
+            <button onclick="toggleModal('adminPanel')" class="absolute top-8 right-8 text-gray-500 text-2xl hover:text-white transition">&times;</button>
+            <h2 class="text-2xl font-black mb-8 uppercase text-purple italic">Добавить в коллекцию</h2>
+            <form class="space-y-4" onsubmit="addAnime(event)">
+                <input id="aTitle" type="text" placeholder="Название аниме" class="w-full bg-[#121212] border border-gray-800 rounded-2xl px-6 py-4 outline-none text-white focus:border-purple-500" required>
+                <input id="aImg" type="text" placeholder="URL Постера" class="w-full bg-[#121212] border border-gray-800 rounded-2xl px-6 py-4 outline-none text-white focus:border-purple-500" required>
+                <input id="aEp" type="text" placeholder="Номер серии" class="w-full bg-[#121212] border border-gray-800 rounded-2xl px-6 py-4 outline-none text-white focus:border-purple-500">
+                <textarea id="aFrame" placeholder="Вставь сюда <iframe...> код из Rutube" class="w-full bg-[#121212] border border-gray-800 rounded-2xl px-6 py-4 outline-none text-white h-32 text-xs" required></textarea>
+                <button class="w-full purple-gradient py-5 rounded-2xl font-black uppercase tracking-widest hover:scale-[1.02] transition">Опубликовать</button>
+            </form>
+        </div>
     </div>
-    <div id="catalog" class="grid"></div>
-</div>
 
-<script>
-    // 1. ОБЪЯВЛЯЕМ ВСЕ ПЕРЕМЕННЫЕ В НАЧАЛЕ (чтобы не было ошибок в консоли)
-    let isReg = false;
-    let animeDB = JSON.parse(localStorage.getItem('p_anime')) || [];
-    let currentUser = JSON.parse(localStorage.getItem('p_session'));
+    <!-- Плеер -->
+    <div id="playerModal" class="modal p-4">
+        <div class="w-full max-w-6xl aspect-video relative bg-black rounded-[2.5rem] overflow-hidden shadow-2xl border border-purple-500/20">
+            <button onclick="closePlayer()" class="absolute top-6 right-6 z-50 bg-black/80 hover:bg-purple-600 w-12 h-12 rounded-full text-white text-3xl transition">&times;</button>
+            <div id="playerContainer" class="w-full h-full"></div>
+        </div>
+    </div>
 
-    // 2. ФУНКЦИЯ ПЕРЕКЛЮЧЕНИЯ ВХОД/РЕГИСТРАЦИЯ
-    function toggleMode() {
-        isReg = !isReg;
-        document.getElementById('auth-title').innerText = isReg ? "Регистрация" : "Вход";
-        document.getElementById('toggleText').innerText = isReg ? "Уже есть аккаунт? Войти" : "Нет аккаунта? Регистрация";
-    }
+    <script>
+        const ADMIN_DATA = { user: "Admin", pass: "kjkszpj006" };
+        let isAdmin = localStorage.getItem('isZenAdmin') === 'true';
 
-    // 3. ЛОГИКА АВТОРИЗАЦИИ
-    function processAuth() {
-        const name = document.getElementById('logName').value.trim();
-        const pass = document.getElementById('logPass').value.trim();
+        function toggleModal(id) { document.getElementById(id).classList.toggle('active'); }
 
-        if(!name || !pass) return alert("Заполните поля!");
-
-        // Создаем сессию
-        currentUser = { 
-            name: name, 
-            role: (name === 'admin' && pass === '123') ? 'admin' : 'user' 
-        };
-
-        localStorage.setItem('p_session', JSON.stringify(currentUser));
-        renderApp();
-    }
-
-    // 4. ОТОБРАЖЕНИЕ ПРИЛОЖЕНИЯ
-    function renderApp() {
-        if (!currentUser) return;
-
-        // Скрываем вход, показываем сайт
-        document.getElementById('auth-screen').style.display = 'none';
-        document.getElementById('mainNav').style.display = 'flex';
-        document.getElementById('mainContent').style.display = 'block';
-
-        // Показываем админку только админу
-        if (currentUser.role === 'admin') {
-            document.getElementById('admin-panel').style.display = 'block';
+        // Исправленное переключение вкладок
+        function switchAuth(type) {
+            const isLogin = (type === 'login');
+            document.getElementById('formLogin').classList.toggle('hidden', !isLogin);
+            document.getElementById('formReg').classList.toggle('hidden', isLogin);
+            
+            document.getElementById('tabLogin').className = isLogin ? 'pb-3 text-lg font-black tab-active outline-none' : 'pb-3 text-lg font-black text-gray-600 opacity-50 outline-none';
+            document.getElementById('tabReg').className = !isLogin ? 'pb-3 text-lg font-black tab-active outline-none' : 'pb-3 text-lg font-black text-gray-600 opacity-50 outline-none';
         }
 
-        renderCards();
-    }
+        function handleLogin(e) {
+            e.preventDefault();
+            const u = document.getElementById('loginUser').value;
+            const p = document.getElementById('loginPass').value;
+            if(u === ADMIN_DATA.user && p === ADMIN_DATA.pass) {
+                isAdmin = true;
+                localStorage.setItem('isZenAdmin', 'true');
+                location.reload();
+            } else { alert("Ошибка!"); }
+        }
 
-    // 5. КАРТОЧКИ АНИМЕ
-    function renderCards() {
-        const list = document.getElementById('catalog');
-        list.innerHTML = '';
-        animeDB.forEach(a => {
-            list.innerHTML += `<div class="card"><b>${a.t}</b></div>`;
-        });
-    }
+        function handleLogout() { localStorage.setItem('isZenAdmin', 'false'); location.reload(); }
 
-    // 6. ДОБАВЛЕНИЕ АНИМЕ
-    function addAnime() {
-        const t = document.getElementById('a-title').value.trim();
-        if(!t) return;
+        function handleSearch(q) {
+            const hero = document.getElementById('heroSection');
+            const title = document.getElementById('gridTitle');
+            if(q.length > 0) {
+                hero.style.display = 'none';
+                title.innerHTML = `ПОИСК: <span class="text-purple">"${q.toUpperCase()}"</span>`;
+            } else {
+                hero.style.display = 'flex';
+                title.innerHTML = `НЕДАВНИЕ <span class="text-purple">ОБНОВЛЕНИЯ</span>`;
+            }
+            render(q.toLowerCase());
+        }
 
-        animeDB.push({ t: t });
-        localStorage.setItem('p_anime', JSON.stringify(animeDB));
-        document.getElementById('a-title').value = '';
-        renderCards();
-    }
+        function addAnime(e) {
+            e.preventDefault();
+            const item = {
+                id: Date.now(),
+                title: document.getElementById('aTitle').value,
+                img: document.getElementById('aImg').value,
+                ep: document.getElementById('aEp').value,
+                frame: document.getElementById('aFrame').value
+            };
+            let data = JSON.parse(localStorage.getItem('zen_final_db')) || [];
+            data.unshift(item);
+            localStorage.setItem('zen_final_db', JSON.stringify(data));
+            render();
+            toggleModal('adminPanel');
+            e.target.reset();
+        }
 
-    // 7. ВЫХОД
-    function logout() {
-        localStorage.removeItem('p_session');
-        location.reload();
-    }
+        function deleteAnime(id) {
+            if(confirm('Удалить?')) {
+                let data = JSON.parse(localStorage.getItem('zen_final_db')) || [];
+                data = data.filter(a => a.id !== id);
+                localStorage.setItem('zen_final_db', JSON.stringify(data));
+                render();
+            }
+        }
 
-    // ПРОВЕРКА ПРИ ЗАГРУЗКЕ
-    window.onload = () => {
-        if (currentUser) renderApp();
-    };
-</script>
+        function render(filter = "") {
+            const grid = document.getElementById('animeGrid');
+            const rawData = JSON.parse(localStorage.getItem('zen_final_db')) || [];
+            const data = rawData.filter(item => item.title.toLowerCase().includes(filter));
+            
+            if(data.length === 0) {
+                grid.innerHTML = '<div class="col-span-full py-20 text-center opacity-20 text-2xl font-black italic uppercase">База пуста</div>';
+                return;
+            }
 
+            grid.innerHTML = data.map(item => `
+                <div class="anime-card-wrap relative">
+                    ${isAdmin ? `<button onclick="deleteAnime(${item.id})" class="absolute -top-3 -right-3 z-30 bg-red-600 text-white rounded-full w-8 h-8 font-black shadow-2xl hover:scale-125 transition">×</button>` : ''}
+                    <div class="cursor-pointer" onclick="openPlayer('${encodeURIComponent(item.frame)}')">
+                        <div class="relative overflow-hidden rounded-[2.5rem] aspect-[3/4.2] shadow-2xl transition-all duration-500">
+                            <img src="${item.img}" class="object-cover w-full h-full transition duration-500 group-hover:scale-110">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent opacity-0 hover:opacity-100 transition-opacity p-6 flex flex-col justify-end">
+                                <div class="purple-gradient text-white text-[9px] font-black px-4 py-1.5 rounded-full w-fit italic uppercase">Смотреть</div>
+                            </div>
+                            <div class="absolute top-5 left-5 bg-black/70 backdrop-blur-xl px-3 py-1 rounded-2xl text-[10px] font-black border border-white/10 italic">EP ${item.ep}</div>
+                        </div>
+                        <h4 class="mt-5 text-[13px] font-black truncate uppercase tracking-tighter text-center">${item.title}</h4>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function openPlayer(enc) {
+            let f = decodeURIComponent(enc).replace(/width=".*?"/, 'width="100%"').replace(/height=".*?"/, 'height="100%"');
+            document.getElementById('playerContainer').innerHTML = f;
+            toggleModal('playerModal');
+        }
+
+        function closePlayer() { document.getElementById('playerContainer').innerHTML = ''; toggleModal('playerModal'); }
+
+        // Проверка состояния админа при загрузке
+        if(isAdmin) {
+            document.getElementById('adminLink').classList.remove('hidden');
+            document.getElementById('logoutBtn').classList.remove('hidden');
+            document.getElementById('authBtn').classList.add('hidden');
+        }
+        window.onload = () => render();
+    </script>
 </body>
 </html>
