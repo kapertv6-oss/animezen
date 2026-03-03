@@ -5,13 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AnimeZen — Твой мир аниме</title>
 
-    <!-- ИСПРАВЛЕННЫЕ ПУТИ FIREBASE V8 -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+    <!-- ИСПОЛЬЗУЕМ ТОЛЬКО ПРЯМЫЕ ССЫЛКИ V8 (БЕЗ ОШИБОК) -->
+    <script src="https://www.gstatic.com"></script>
+    <script src="https://www.gstatic.com"></script>
+    <script src="https://www.gstatic.com"></script>
+    <script src="https://www.gstatic.com"></script>
 
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Исправленный шрифт (теперь без блокировок) -->
     <link href="https://fonts.googleapis.com" rel="stylesheet">
 
     <style>
@@ -19,12 +20,12 @@
         body {
             background: var(--bg); color: #f4f4f5; font-family: 'Inter', sans-serif;
             background-image: radial-gradient(circle at 50% -20%, #2e1065, transparent 50%);
-            min-height: 100vh; margin: 0; overflow-x: hidden;
+            min-height: 100vh; margin: 0;
         }
         .glass { background: rgba(9, 9, 11, 0.8); backdrop-filter: blur(16px); border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
         .anime-card {
             background: var(--card-bg); border: 1px solid rgba(255, 255, 255, 0.05);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 1.5rem; overflow: hidden;
+            transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 1.5rem; overflow: hidden;
         }
         .anime-card:hover { transform: translateY(-8px); border-color: var(--accent); box-shadow: 0 20px 40px -15px rgba(147, 51, 234, 0.4); }
         .modal {
@@ -39,7 +40,7 @@
 </head>
 <body>
 
-<div id="toastContainer" class="fixed top-6 right-6 flex flex-col gap-3 z-[9999]"></div>
+<div id="toastContainer" class="fixed top-6 right-6 flex flex-col gap-3 z-50"></div>
 
 <header class="glass fixed top-0 w-full px-6 py-4 flex justify-between items-center z-50">
     <div class="flex items-center gap-8">
@@ -61,7 +62,7 @@
 <main class="pt-28 max-w-7xl mx-auto px-6 pb-20">
     <section id="animeSection">
         <h2 class="text-3xl font-black mb-8 uppercase tracking-tight">Популярное</h2>
-        <div id="animeGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8"></div>
+        <div id="animeGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 text-center"></div>
     </section>
 
     <section id="newsSection" class="hidden">
@@ -76,23 +77,18 @@
         <div class="aspect-video bg-black rounded-[1.8rem] overflow-hidden">
             <iframe id="playerFrame" class="w-full h-full" allowfullscreen></iframe>
         </div>
-        <div class="p-8 grid md:grid-cols-3 gap-8">
-            <div class="md:col-span-2">
-                <div class="flex justify-between items-start mb-6">
-                    <h3 id="playerTitle" class="text-2xl font-black">Название аниме</h3>
-                    <div class="text-right">
-                        <div id="ratingStars" class="flex gap-1 text-2xl mb-1"></div>
-                        <p class="text-xs text-gray-500 font-bold uppercase tracking-widest">Рейтинг: <span id="avgRating" class="text-purple-400 text-sm">0.0</span></p>
-                    </div>
-                </div>
-                <div id="comments" class="max-h-48 overflow-y-auto space-y-3 mb-6 pr-2"></div>
-                <div class="flex gap-3">
-                    <input id="commentInput" class="flex-1 bg-white/5 border border-white/10 p-4 rounded-2xl focus:outline-none focus:border-purple-500" placeholder="Ваш комментарий...">
-                    <button onclick="addComment()" class="btn-main px-8 rounded-2xl">🚀</button>
+        <div class="p-8">
+            <div class="flex justify-between items-start mb-6">
+                <h3 id="playerTitle" class="text-2xl font-black">Название аниме</h3>
+                <div class="text-right">
+                    <div id="ratingStars" class="flex gap-1 text-2xl mb-1"></div>
+                    <p class="text-xs text-gray-500 font-bold uppercase tracking-widest">Рейтинг: <span id="avgRating" class="text-purple-400 text-sm">0.0</span></p>
                 </div>
             </div>
-            <div class="bg-white/5 rounded-3xl p-6 hidden md:block border border-white/5 text-sm text-gray-400 italic">
-                Для переключения серий используйте кнопки внутри плеера.
+            <div id="comments" class="max-h-48 overflow-y-auto space-y-3 mb-6 pr-2"></div>
+            <div class="flex gap-3">
+                <input id="commentInput" class="flex-1 bg-white/5 border border-white/10 p-4 rounded-2xl focus:outline-none focus:border-purple-500" placeholder="Ваш комментарий...">
+                <button onclick="addComment()" class="btn-main px-8 rounded-2xl">Отправить</button>
             </div>
         </div>
     </div>
@@ -102,7 +98,7 @@
 <div id="profileModal" class="modal" onclick="if(event.target===this) toggleModal('profileModal')">
     <div class="bg-[#0f0f14] border border-white/10 p-8 rounded-[3rem] w-full max-w-md text-center">
         <div class="relative w-32 h-32 mx-auto mb-6">
-            <img id="avatarPreview" class="w-full h-full rounded-full object-cover border-4 border-purple-600/30 p-1 shadow-2xl" src="https://via.placeholder.com">
+            <img id="avatarPreview" class="w-full h-full rounded-full object-cover border-4 border-purple-600/30 p-1 shadow-2xl" src="https://placehold.co">
             <label class="absolute bottom-1 right-1 bg-purple-600 p-2 rounded-full cursor-pointer hover:bg-purple-500 shadow-lg transition">
                 <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" stroke-width="2" stroke-linecap="round" /></svg>
                 <input type="file" id="avatarInput" class="hidden" onchange="saveProfile()">
@@ -111,7 +107,7 @@
         <input id="nicknameInput" class="w-full bg-white/5 border border-white/10 p-4 rounded-2xl mb-4 text-center text-xl font-black focus:outline-none" placeholder="Никнейм">
         <div class="grid grid-cols-2 gap-4 mb-6">
             <div class="bg-white/5 p-4 rounded-2xl text-center">
-                <div class="text-[10px] text-gray-500 uppercase font-bold mb-1">Твой ID</div>
+                <div class="text-[10px] text-gray-500 uppercase font-bold mb-1">ID</div>
                 <div id="profileId" class="text-lg font-black text-purple-400">-</div>
             </div>
             <div class="bg-white/5 p-4 rounded-2xl text-center">
@@ -126,11 +122,11 @@
 <!-- ADMIN MODAL -->
 <div id="adminModal" class="modal" onclick="if(event.target===this) toggleModal('adminModal')">
     <div class="bg-[#0f0f14] border border-white/10 p-10 rounded-[3rem] w-full max-w-lg shadow-2xl">
-        <h2 class="text-2xl font-black mb-8 text-purple-400 uppercase tracking-tighter">Добавить контент</h2>
+        <h2 class="text-2xl font-black mb-8 text-purple-400 uppercase tracking-tighter">Добавить аниме</h2>
         <div class="space-y-4">
             <input id="admTitle" class="w-full bg-white/5 border border-white/10 p-4 rounded-2xl focus:outline-none" placeholder="Название">
             <input id="admPoster" class="w-full bg-white/5 border border-white/10 p-4 rounded-2xl focus:outline-none" placeholder="URL постера">
-            <input id="admEmbed" class="w-full bg-white/5 border border-white/10 p-4 rounded-2xl focus:outline-none" placeholder="src плеера">
+            <input id="admEmbed" class="w-full bg-white/5 border border-white/10 p-4 rounded-2xl focus:outline-none" placeholder="src плеера (iframe)">
             <button onclick="addAnime()" class="w-full btn-main py-5 rounded-2xl shadow-lg mt-4">Опубликовать</button>
         </div>
     </div>
@@ -157,9 +153,10 @@
 
     const toggleModal = (id) => document.getElementById(id).classList.toggle("active");
 
+    // ВХОД ЧЕРЕЗ REDIRECT (более надежно для новых устройств)
     function login() {
         const provider = new firebase.auth.GoogleAuthProvider();
-        auth.signInWithPopup(provider).catch(e => toast("Ошибка входа!"));
+        auth.signInWithRedirect(provider);
     }
 
     function logout() { auth.signOut().then(() => location.reload()); }
@@ -178,7 +175,11 @@
         }
     });
 
-    // ANIME LOGIC
+    // Обработка результата редиректа при входе
+    auth.getRedirectResult().catch(e => {
+        if(e.code) toast("Ошибка входа: " + e.message);
+    });
+
     function addAnime() {
         const title = document.getElementById("admTitle").value,
               poster = document.getElementById("admPoster").value,
@@ -203,7 +204,7 @@
                         </div>
                         <div class="absolute top-3 left-3 bg-black/70 px-3 py-1 rounded-full text-xs font-bold text-yellow-400 border border-white/10">⭐ ${a.rating || 0}</div>
                     </div>
-                    <div class="p-5 font-black text-sm uppercase truncate">${a.title}</div>
+                    <div class="p-5 font-black text-sm uppercase truncate text-center">${a.title}</div>
                 </div>`;
         });
     });
@@ -248,7 +249,7 @@
                 snap.forEach(r => { sum += r.val(); count++; });
                 let avg = +(sum / count).toFixed(1);
                 db.ref("anime/" + currentAnimeId + "/rating").set(avg);
-                toast("Оценка принята!");
+                toast("Оценка сохранена!");
             });
         });
     }
@@ -291,7 +292,7 @@
         }
         await db.ref("users/" + currentUser.uid).update({ nickname: document.getElementById("nicknameInput").value, avatar: url });
         document.getElementById("avatarPreview").src = url;
-        toast("Сохранено!");
+        toast("Данные сохранены!");
     }
 
     function openNews() {
@@ -302,4 +303,3 @@
 
 </body>
 </html>
-
