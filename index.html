@@ -7,10 +7,13 @@
     
     <!-- ПОДКЛЮЧЕНИЕ БИБЛИОТЕК (САМЫЙ ВЕРХ) -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://www.gstatic.com"></script>
-    <script src="https://www.gstatic.com"></script>
     
-    <link href="https://fonts.googleapis.com" rel="stylesheet">
+    <!-- Подключение Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         body { background-color: #060606; color: #f0f0f0; font-family: 'Inter', sans-serif; overflow-x: hidden; }
         .purple-gradient { background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%); }
@@ -83,117 +86,88 @@
                 <input id="loginPass" type="password" placeholder="Пароль" class="w-full bg-[#161616] border border-gray-800 rounded-[1.5rem] px-7 py-5 outline-none text-white focus:border-purple-500">
                 <button type="submit" class="w-full purple-gradient py-5 rounded-[1.5rem] font-black uppercase tracking-widest shadow-xl">АВТОРИЗАЦИЯ</button>
             </form>
-            <div id="formReg" class="hidden text-center py-12 text-gray-600 italic">Регистрация временно закрыта.</div>
-        </div>
-    </div>
 
-    <!-- Плеер -->
-    <div id="playerModal" class="modal p-4">
-        <div class="w-full max-w-6xl aspect-video relative bg-black rounded-[3rem] overflow-hidden border border-purple-500/20 shadow-2xl">
-            <button onclick="closeModal('playerModal')" class="absolute top-8 right-8 z-50 bg-black/80 hover:bg-purple-600 w-14 h-14 rounded-full text-white text-4xl transition-all">&times;</button>
-            <div id="playerContainer" class="w-full h-full"></div>
-        </div>
-    </div>
-
-    <!-- Админка -->
-    <div id="adminPanel" class="modal p-4">
-        <div class="bg-[#0a0a0a] border-2 border-purple-600/30 w-full max-w-xl rounded-[3.5rem] p-12 relative shadow-2xl">
-            <button onclick="closeModal('adminPanel')" class="absolute top-10 right-10 text-gray-500 text-3xl hover:text-white transition">&times;</button>
-            <h2 class="text-3xl font-black mb-10 uppercase text-purple italic">Добавить в Облако</h2>
-            <form class="space-y-5" onsubmit="saveToFirebase(event)">
-                <input id="aTitle" type="text" placeholder="Название" class="w-full bg-[#121212] border border-gray-800 rounded-2xl px-7 py-5 outline-none text-white focus:border-purple-500" required>
-                <input id="aImg" type="text" placeholder="URL Постера" class="w-full bg-[#121212] border border-gray-800 rounded-2xl px-7 py-5 outline-none text-white focus:border-purple-500" required>
-                <input id="aEp" type="text" placeholder="Серия" class="w-full bg-[#121212] border border-gray-800 rounded-2xl px-7 py-5 outline-none text-white focus:border-purple-500">
-                <textarea id="aFrame" placeholder="Вставь сюда <iframe...> код из Rutube" class="w-full bg-[#121212] border border-gray-800 rounded-2xl px-7 py-5 outline-none text-white h-36 font-mono text-xs" required></textarea>
-                <button id="saveBtn" class="w-full purple-gradient py-6 rounded-2xl font-black uppercase">ОПУБЛИКОВАТЬ</button>
+            <!-- Регистрация -->
+            <form id="formReg" class="hidden space-y-6" onsubmit="handleRegister(event)">
+                <input id="regUser" type="text" placeholder="Логин" class="w-full bg-[#161616] border border-gray-800 rounded-[1.5rem] px-7 py-5 outline-none text-white focus:border-purple-500">
+                <input id="regPass" type="password" placeholder="Пароль" class="w-full bg-[#161616] border border-gray-800 rounded-[1.5rem] px-7 py-5 outline-none text-white focus:border-purple-500">
+                <button type="submit" class="w-full purple-gradient py-5 rounded-[1.5rem] font-black uppercase tracking-widest shadow-xl">РЕГИСТРАЦИЯ</button>
             </form>
         </div>
     </div>
 
     <script>
-        const ADMIN_DATA = { user: "Admin", pass: "kjkszpj006" };
+        // Firebase Initialization
+        const firebaseConfig = {
+            apiKey: "AIzaSyAAigsanR80Qe2Du4MmAxIMLBghPqy4nXE",
+            databaseURL: "https://animezen-97635-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "animezen-97635"
+        };
+        
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.database();
+
+        // Check if user is logged in
         let isAdmin = localStorage.getItem('isZenAdmin') === 'true';
 
-        // ИНИЦИАЛИЗАЦИЯ ПОСЛЕ ЗАГРУЗКИ ВСЕХ СКРИПТОВ
         window.onload = function() {
-            if (typeof firebase === 'undefined') {
-                console.error("Firebase load error");
-                return;
-            }
-
-            const firebaseConfig = {
-                apiKey: "AIzaSyAAigsanR80Qe2Du4MmAxIMLBghPqy4nXE",
-                databaseURL: "https://animezen-97635-default-rtdb.europe-west1.firebasedatabase.app",
-                projectId: "animezen-97635"
-            };
-            
-            firebase.initializeApp(firebaseConfig);
-            window.db = firebase.database();
-            
             renderAnime();
             checkAdminState();
         };
 
-        function openModal(id) { document.getElementById(id).classList.add('active'); }
-        function closeModal(id) { 
-            document.getElementById(id).classList.remove('active'); 
-            if(id === 'playerModal') document.getElementById('playerContainer').innerHTML = '';
-        }
-
-        function switchAuth(type) {
-            const isL = type === 'login';
-            document.getElementById('formLogin').classList.toggle('hidden', !isL);
-            document.getElementById('formReg').classList.toggle('hidden', isL);
-            document.getElementById('tabLogin').className = isL ? 'pb-4 text-xl font-black tab-active' : 'pb-4 text-xl font-black text-gray-600 opacity-50';
-            document.getElementById('tabReg').className = !isL ? 'pb-4 text-xl font-black tab-active' : 'pb-4 text-xl font-black text-gray-600 opacity-50';
-        }
-
+        // Handle user login
         function handleLogin(e) {
             e.preventDefault();
-            if(document.getElementById('loginUser').value === ADMIN_DATA.user && document.getElementById('loginPass').value === ADMIN_DATA.pass) {
-                localStorage.setItem('isZenAdmin', 'true');
-                location.reload();
-            } else { alert("Ошибка доступа!"); }
+            const email = document.getElementById('loginUser').value;
+            const password = document.getElementById('loginPass').value;
+            auth.signInWithEmailAndPassword(email, password)
+                .then(userCredential => {
+                    const user = userCredential.user;
+                    localStorage.setItem('isZenAdmin', 'true');
+                    location.reload();
+                })
+                .catch(error => {
+                    alert('Ошибка доступа!');
+                    console.error(error.message);
+                });
         }
 
-        function handleLogout() { localStorage.setItem('isZenAdmin', 'false'); location.reload(); }
-
-        function saveToFirebase(e) {
+        // Handle user registration
+        function handleRegister(e) {
             e.preventDefault();
-            document.getElementById('saveBtn').innerText = "СОХРАНЕНИЕ...";
-            const item = {
-                title: document.getElementById('aTitle').value,
-                img: document.getElementById('aImg').value,
-                ep: document.getElementById('aEp').value,
-                frame: document.getElementById('aFrame').value,
-                ts: Date.now()
-            };
-            window.db.ref('animeList').push(item).then(() => {
-                closeModal('adminPanel');
-                e.target.reset();
-                document.getElementById('saveBtn').innerText = "ОПУБЛИКОВАТЬ";
-            });
+            const email = document.getElementById('regUser').value;
+            const password = document.getElementById('regPass').value;
+            auth.createUserWithEmailAndPassword(email, password)
+                .then(userCredential => {
+                    const user = userCredential.user;
+                    localStorage.setItem('isZenAdmin', 'true');
+                    location.reload();
+                })
+                .catch(error => {
+                    alert('Ошибка регистрации!');
+                    console.error(error.message);
+                });
         }
 
+        // Render anime list
         function renderAnime() {
-            window.db.ref('animeList').on('value', (snapshot) => {
+            db.ref('animeList').on('value', (snapshot) => {
                 const grid = document.getElementById('animeGrid');
                 const data = snapshot.val();
-                if(!data) { grid.innerHTML = '<div class="col-span-full py-32 text-center opacity-10 text-3xl font-black italic uppercase">Облако пусто</div>'; return; }
-                
+                if (!data) {
+                    grid.innerHTML = '<div class="col-span-full py-32 text-center opacity-10 text-3xl font-black italic uppercase">Облако пусто</div>';
+                    return;
+                }
+
                 let html = '';
                 Object.keys(data).reverse().forEach(key => {
                     const item = data[key];
                     html += `
                     <div class="anime-card-wrap relative group">
-                        ${isAdmin ? `<button onclick="deleteAnime('${key}')" class="absolute -top-4 -right-4 z-40 bg-red-600 text-white rounded-full w-10 h-10 font-black shadow-2xl hover:scale-125 transition-all">×</button>` : ''}
-                        <div class="cursor-pointer" onclick="openPlayer('${encodeURIComponent(item.frame)}')">
-                            <div class="relative overflow-hidden rounded-[2.8rem] aspect-[3/4.3] shadow-2xl transition-all duration-500 group-hover:shadow-purple-500/20">
-                                <img src="${item.img}" class="object-cover w-full h-full transition duration-700 group-hover:scale-110">
-                                <div class="absolute inset-0 bg-gradient-to-t from-[#060606] via-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 p-8 flex flex-col justify-end text-left">
-                                    <div class="purple-gradient text-white text-[10px] font-black px-5 py-2 rounded-full w-fit italic uppercase tracking-widest">Смотреть</div>
-                                </div>
-                                <div class="absolute top-6 left-6 bg-black/70 backdrop-blur-2xl px-4 py-1.5 rounded-[1rem] text-[11px] font-black border border-white/10 italic text-white uppercase">EP ${item.ep}</div>
+                        <div class="cursor-pointer">
+                            <div class="relative overflow-hidden rounded-[2.8rem] aspect-[3/4.3] shadow-2xl">
+                                <img src="${item.img}" class="object-cover w-full h-full">
                             </div>
                             <h4 class="mt-6 text-[14px] font-black truncate uppercase tracking-tighter text-center text-white">${item.title}</h4>
                         </div>
@@ -203,29 +177,18 @@
             });
         }
 
-        function deleteAnime(key) { if(confirm('Удалить?')) window.db.ref('animeList/' + key).remove(); }
-        
-        function openPlayer(enc) {
-            let f = decodeURIComponent(enc).replace(/width=".*?"/, 'width="100%"').replace(/height=".*?"/, 'height="100%"');
-            document.getElementById('playerContainer').innerHTML = f;
-            openModal('playerModal');
-        }
-
+        // Show admin panel link when admin is logged in
         function checkAdminState() {
-            if(isAdmin) {
+            if (isAdmin) {
                 document.getElementById('adminLink').classList.remove('hidden');
                 document.getElementById('logoutBtn').classList.remove('hidden');
                 document.getElementById('authBtn').classList.add('hidden');
             }
         }
 
-        function handleSearch(q) {
-            const cards = document.querySelectorAll('.anime-card-wrap');
-            cards.forEach(card => {
-                const title = card.querySelector('h4').innerText.toLowerCase();
-                card.style.display = title.includes(q.toLowerCase()) ? 'block' : 'none';
-            });
-        }
+        // Open and close modals
+        function openModal(id) { document.getElementById(id).classList.add('active'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
     </script>
 </body>
 </html>
