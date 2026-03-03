@@ -6,112 +6,91 @@
 <title>AnimeZen</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
+
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
 
 <style>
-body{background:#0f0f14;color:#fff;font-family:Inter,sans-serif;overflow-x:hidden}
-.glass{background:rgba(20,20,30,.8);backdrop-filter:blur(20px)}
-.card{transition:.35s cubic-bezier(.2,.8,.2,1)}
-.card:hover{transform:scale(1.06);box-shadow:0 20px 40px rgba(0,0,0,.6)}
-.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(12px);align-items:center;justify-content:center;z-index:100}
-.modal.active{display:flex;animation:fade .3s}
-@keyframes fade{from{opacity:0}to{opacity:1}}
-.slide-section{transition:.5s ease;transform:translateY(40px);opacity:0}
-.slide-section.active{transform:translateY(0);opacity:1}
+body{background:#0f0f14;color:#fff;font-family:Inter,sans-serif}
+.glass{background:rgba(20,20,30,.85);backdrop-filter:blur(20px)}
+.card{transition:.3s}
+.card:hover{transform:scale(1.05)}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(15px);align-items:center;justify-content:center;z-index:1000}
+.modal.active{display:flex}
+.toast-container{
+position:fixed;
+top:20px;
+right:20px;
+display:flex;
+flex-direction:column;
+gap:10px;
+z-index:9999;
+}
+.toast{
+background:#1c1c24;
+padding:15px 20px;
+border-radius:12px;
+box-shadow:0 10px 30px rgba(0,0,0,.6);
+animation:slide .4s ease;
+}
+@keyframes slide{from{transform:translateX(100%)}to{transform:translateX(0)}}
 input,textarea{background:#1c1c24}
-.news-card{cursor:pointer;transition:.3s}
-.news-card:hover{transform:translateY(-5px)}
+.star{cursor:pointer;font-size:20px}
 </style>
 </head>
 <body>
 
+<div class="toast-container" id="toastContainer"></div>
+
 <header class="glass fixed top-0 w-full px-8 py-4 flex justify-between items-center z-50">
 <div class="text-2xl font-black text-purple-400">ANIMEZEN</div>
-
 <div class="flex gap-4 items-center">
-<button onclick="openNews()" class="text-gray-300 hover:text-purple-400">Новости</button>
-<button onclick="openAnime()" class="text-gray-300 hover:text-purple-400">Аниме</button>
-
-<button id="adminBtn" onclick="toggleModal('adminModal')"
-class="hidden bg-purple-600 px-4 py-2 rounded-xl text-sm">Админ</button>
-
-<button id="authBtn" onclick="toggleModal('authModal')"
-class="bg-purple-600 px-4 py-2 rounded-xl text-sm">Войти</button>
-
-<button id="logoutBtn" onclick="logout()"
-class="hidden bg-red-600 px-4 py-2 rounded-xl text-sm">Выйти</button>
+<button onclick="openNews()">Новости</button>
+<button onclick="openProfile()">Профиль</button>
+<button onclick="toggleModal('adminModal')" id="adminBtn" class="hidden bg-purple-600 px-4 py-2 rounded-xl text-sm">Админ</button>
+<button onclick="toggleModal('authModal')" id="authBtn" class="bg-purple-600 px-4 py-2 rounded-xl text-sm">Войти</button>
+<button onclick="logout()" id="logoutBtn" class="hidden bg-red-600 px-4 py-2 rounded-xl text-sm">Выйти</button>
 </div>
 </header>
 
-<!-- NEWS SECTION -->
-<section id="newsSection"
-class="slide-section pt-32 max-w-5xl mx-auto px-8 pb-20 hidden">
-<h2 class="text-3xl text-purple-400 mb-10 font-bold">Новости сайта</h2>
-<div id="newsContainer" class="space-y-6"></div>
-</section>
-
-<!-- ANIME SECTION -->
-<section id="animeSection"
-class="slide-section active pt-32 max-w-7xl mx-auto px-8 pb-20">
+<section id="animeSection" class="pt-32 max-w-7xl mx-auto px-8 pb-20">
 <div id="animeGrid" class="grid grid-cols-2 md:grid-cols-5 gap-8"></div>
 </section>
 
-<!-- AUTH MODAL -->
-<div id="authModal" class="modal">
-<div class="bg-[#181822] p-10 rounded-3xl w-96">
-<h2 id="authTitle" class="text-xl mb-6 text-purple-400 font-bold">Вход</h2>
+<section id="newsSection" class="pt-32 max-w-5xl mx-auto px-8 pb-20 hidden">
+<h2 class="text-3xl text-purple-400 mb-8 font-bold">Новости</h2>
+<div id="newsContainer" class="space-y-6"></div>
+</section>
 
-<input id="authEmail" type="email" placeholder="Email"
-class="w-full p-3 mb-4 rounded-xl">
+<!-- PLAYER -->
+<div id="playerModal" class="modal">
+<div class="bg-[#181822] p-6 rounded-3xl w-[900px] max-h-[90vh] overflow-y-auto">
+<iframe id="playerFrame" class="w-full h-96 mb-6"></iframe>
 
-<input id="authPassword" type="password" placeholder="Пароль"
-class="w-full p-3 mb-6 rounded-xl">
+<h3 class="text-purple-400 font-bold mb-2">Рейтинг</h3>
+<div id="ratingStars" class="mb-4"></div>
+<p class="mb-6">Средний рейтинг: <span id="avgRating">0</span></p>
 
-<button id="authActionBtn" onclick="authAction()"
-class="w-full bg-purple-600 py-3 rounded-xl font-bold">
-Войти
-</button>
-
-<p id="authSwitch" onclick="toggleAuthMode()"
-class="mt-6 text-center text-gray-400 cursor-pointer">
-Нет аккаунта? Создайте!
-</p>
+<h3 class="text-purple-400 font-bold mb-2">Комментарии</h3>
+<div id="comments" class="space-y-3 mb-4"></div>
+<textarea id="commentInput" class="w-full p-3 rounded-xl mb-3" placeholder="Ваш комментарий"></textarea>
+<button onclick="addComment()" class="bg-purple-600 px-4 py-2 rounded-xl">Отправить</button>
 </div>
 </div>
 
-<!-- ADMIN -->
-<div id="adminModal" class="modal">
-<div class="bg-[#181822] p-10 rounded-3xl w-[500px] max-h-[90vh] overflow-y-auto">
-
-<h2 class="text-xl text-purple-400 mb-4 font-bold">Добавить новость</h2>
-
-<input id="newsTitle" placeholder="Заголовок"
-class="w-full p-3 mb-3 rounded-xl">
-
-<textarea id="newsText" placeholder="Текст"
-class="w-full p-3 mb-3 rounded-xl h-28"></textarea>
-
-<input id="newsImg" placeholder="URL изображения"
-class="w-full p-3 mb-4 rounded-xl">
-
-<button onclick="addNews()"
-class="w-full bg-purple-600 py-3 rounded-xl font-bold">
-Опубликовать
-</button>
-
-</div>
-</div>
-
-<!-- NEWS VIEW MODAL -->
-<div id="newsViewModal" class="modal">
-<div class="bg-[#181822] p-10 rounded-3xl w-[700px] max-h-[90vh] overflow-y-auto">
-<h2 id="viewTitle" class="text-2xl text-purple-400 mb-4 font-bold"></h2>
-<p id="viewText" class="mb-6 text-gray-300"></p>
-<img id="viewImg" class="rounded-xl mb-4 hidden">
-<button onclick="toggleModal('newsViewModal')"
-class="bg-purple-600 px-6 py-2 rounded-xl">Закрыть</button>
+<!-- PROFILE -->
+<div id="profileModal" class="modal">
+<div class="bg-[#181822] p-8 rounded-3xl w-[400px]">
+<h2 class="text-purple-400 text-xl mb-4 font-bold">Профиль</h2>
+<img id="avatarPreview" class="w-24 h-24 rounded-full mb-4 object-cover">
+<input type="file" id="avatarInput" class="mb-3">
+<input id="nicknameInput" class="w-full p-3 mb-3 rounded-xl" placeholder="Никнейм">
+<p>ID: <span id="profileId"></span></p>
+<p>Просмотрено аниме: <span id="animeCount"></span></p>
+<p>Просмотрено новостей: <span id="newsCount"></span></p>
+<button onclick="saveProfile()" class="mt-4 w-full bg-purple-600 py-2 rounded-xl">Сохранить</button>
 </div>
 </div>
 
@@ -119,51 +98,32 @@ class="bg-purple-600 px-6 py-2 rounded-xl">Закрыть</button>
 firebase.initializeApp({
 apiKey:"AIzaSyAAigsanR80Qe2Du4MmAxIMLBghPqy4nXE",
 databaseURL:"https://animezen-97635-default-rtdb.europe-west1.firebasedatabase.app",
-projectId:"animezen-97635"
+projectId:"animezen-97635",
+storageBucket:"animezen-97635.appspot.com"
 });
 
 const auth=firebase.auth();
 const db=firebase.database();
+const storage=firebase.storage();
 const ADMIN_EMAIL="rdzaurov093@gmail.com";
 
-let isLogin=true;
+let currentUser=null;
+let currentAnimeId=null;
 
-function toggleModal(id){
-document.getElementById(id).classList.toggle("active");
+function toast(text){
+const t=document.createElement("div");
+t.className="toast";
+t.innerText=text;
+toastContainer.appendChild(t);
+setTimeout(()=>t.remove(),3000);
 }
-
-function toggleAuthMode(){
-isLogin=!isLogin;
-authTitle.innerText=isLogin?"Вход":"Регистрация";
-authActionBtn.innerText=isLogin?"Войти":"Создать";
-authSwitch.innerText=isLogin?
-"Нет аккаунта? Создайте!":
-"Есть аккаунт? Войдите!";
-}
-
-function authAction(){
-const email=authEmail.value;
-const pass=authPassword.value;
-
-if(isLogin){
-auth.signInWithEmailAndPassword(email,pass)
-.then(()=>toggleModal("authModal"))
-.catch(e=>alert(e.message));
-}else{
-auth.createUserWithEmailAndPassword(email,pass)
-.then(()=>toggleModal("authModal"))
-.catch(e=>alert(e.message));
-}
-}
-
-function logout(){auth.signOut()}
 
 auth.onAuthStateChanged(user=>{
+currentUser=user;
 if(user){
 authBtn.classList.add("hidden");
 logoutBtn.classList.remove("hidden");
-if(user.email===ADMIN_EMAIL)
-adminBtn.classList.remove("hidden");
+if(user.email===ADMIN_EMAIL) adminBtn.classList.remove("hidden");
 }else{
 authBtn.classList.remove("hidden");
 logoutBtn.classList.add("hidden");
@@ -171,54 +131,116 @@ adminBtn.classList.add("hidden");
 }
 });
 
+function logout(){auth.signOut();toast("Вы вышли");}
+
+function openProfile(){
+if(!currentUser)return toast("Войдите");
+toggleModal("profileModal");
+db.ref("users/"+currentUser.uid).once("value").then(s=>{
+const d=s.val();
+nicknameInput.value=d.nickname;
+profileId.innerText=d.siteId;
+animeCount.innerText=d.animeCount||0;
+newsCount.innerText=d.newsCount||0;
+if(d.avatar) avatarPreview.src=d.avatar;
+});
+}
+
+function saveProfile(){
+const file=avatarInput.files[0];
+if(file){
+const ref=storage.ref("avatars/"+currentUser.uid);
+ref.put(file).then(()=>{
+ref.getDownloadURL().then(url=>{
+db.ref("users/"+currentUser.uid).update({
+nickname:nicknameInput.value,
+avatar:url
+});
+avatarPreview.src=url;
+toast("Профиль обновлён");
+});
+});
+}else{
+db.ref("users/"+currentUser.uid).update({
+nickname:nicknameInput.value
+});
+toast("Профиль обновлён");
+}
+}
+
+function toggleModal(id){
+document.getElementById(id).classList.toggle("active");
+}
+
 function openNews(){
 animeSection.classList.add("hidden");
 newsSection.classList.remove("hidden");
-setTimeout(()=>newsSection.classList.add("active"),10);
 }
 
-function openAnime(){
-newsSection.classList.add("hidden");
-animeSection.classList.remove("hidden");
-setTimeout(()=>animeSection.classList.add("active"),10);
+function playAnime(id,url){
+currentAnimeId=id;
+playerFrame.src=url;
+toggleModal("playerModal");
+loadComments();
+loadRating();
 }
 
-function addNews(){
-db.ref("news").push({
-title:newsTitle.value,
-text:newsText.value,
-image:newsImg.value,
-date:Date.now()
+function addComment(){
+if(!currentUser)return toast("Войдите");
+db.ref("anime/"+currentAnimeId+"/comments").push({
+uid:currentUser.uid,
+text:commentInput.value
 });
-alert("Новость опубликована!");
+commentInput.value="";
 }
 
-db.ref("news").on("value",snap=>{
-newsContainer.innerHTML="";
+function loadComments(){
+comments.innerHTML="";
+db.ref("anime/"+currentAnimeId+"/comments").on("value",snap=>{
+comments.innerHTML="";
+snap.forEach(c=>{
+comments.innerHTML+=`<div class="bg-[#1c1c24] p-3 rounded-xl">${c.val().text}</div>`;
+});
+});
+}
+
+function loadRating(){
+ratingStars.innerHTML="";
+for(let i=1;i<=5;i++){
+ratingStars.innerHTML+=`<span class="star" onclick="rate(${i})">⭐</span>`;
+}
+db.ref("anime/"+currentAnimeId+"/rating").once("value").then(s=>{
+avgRating.innerText=s.val()||0;
+});
+}
+
+function rate(value){
+if(!currentUser)return toast("Войдите");
+db.ref("anime/"+currentAnimeId+"/rates/"+currentUser.uid).set(value).then(()=>{
+db.ref("anime/"+currentAnimeId+"/rates").once("value").then(s=>{
+let sum=0,count=0;
+s.forEach(r=>{sum+=r.val();count++;});
+let avg=(sum/count).toFixed(1);
+db.ref("anime/"+currentAnimeId+"/rating").set(avg);
+avgRating.innerText=avg;
+});
+});
+}
+
+db.ref("anime").on("value",snap=>{
+animeGrid.innerHTML="";
 snap.forEach(child=>{
-const n=child.val();
-newsContainer.innerHTML+=`
-<div class="news-card bg-[#181822] p-6 rounded-2xl"
-onclick="openNewsView(\`${n.title}\`,\`${n.text}\`,\`${n.image||""}\`)">
-<h3 class="font-bold mb-2">${n.title}</h3>
-<p class="text-gray-400 line-clamp-2">${n.text}</p>
+const id=child.key;
+const a=child.val();
+animeGrid.innerHTML+=`
+<div class="card bg-[#181822] p-4 rounded-2xl">
+<img src="${a.poster}" class="rounded-xl mb-3">
+<h3 class="font-bold mb-2">${a.title}</h3>
+<p class="mb-2">⭐ ${a.rating||0}</p>
+<button onclick="playAnime('${id}','${a.episodes?Object.values(a.episodes)[0].embed:""}')" class="bg-purple-600 px-3 py-1 rounded-xl">Смотреть</button>
 </div>`;
 });
 });
-
-function openNewsView(title,text,img){
-viewTitle.innerText=title;
-viewText.innerText=text;
-
-if(img){
-viewImg.src=img;
-viewImg.classList.remove("hidden");
-}else{
-viewImg.classList.add("hidden");
-}
-
-toggleModal("newsViewModal");
-}
 </script>
 
 </body>
