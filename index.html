@@ -97,18 +97,19 @@
     </div>
 
     <script>
-        // Firebase Initialization
+        // Инициализация Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyAAigsanR80Qe2Du4MmAxIMLBghPqy4nXE",
             databaseURL: "https://animezen-97635-default-rtdb.europe-west1.firebasedatabase.app",
             projectId: "animezen-97635"
         };
         
+        // Инициализация Firebase
         const app = firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.database();
 
-        // Check if user is logged in
+        // Проверка, если пользователь вошел в систему
         let isAdmin = localStorage.getItem('isZenAdmin') === 'true';
 
         window.onload = function() {
@@ -116,7 +117,7 @@
             checkAdminState();
         };
 
-        // Handle user login
+        // Обработка логина
         function handleLogin(e) {
             e.preventDefault();
             const email = document.getElementById('loginUser').value;
@@ -133,7 +134,7 @@
                 });
         }
 
-        // Handle user registration
+        // Обработка регистрации
         function handleRegister(e) {
             e.preventDefault();
             const email = document.getElementById('regUser').value;
@@ -150,7 +151,7 @@
                 });
         }
 
-        // Render anime list
+        // Отображение аниме
         function renderAnime() {
             db.ref('animeList').on('value', (snapshot) => {
                 const grid = document.getElementById('animeGrid');
@@ -177,7 +178,7 @@
             });
         }
 
-        // Show admin panel link when admin is logged in
+        // Проверка состояния администратора
         function checkAdminState() {
             if (isAdmin) {
                 document.getElementById('adminLink').classList.remove('hidden');
@@ -186,7 +187,7 @@
             }
         }
 
-        // Open and close modals
+        // Открытие и закрытие модальных окон
         function openModal(id) { document.getElementById(id).classList.add('active'); }
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
     </script>
