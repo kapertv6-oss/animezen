@@ -194,11 +194,17 @@ ANIMEZEN
 </div>
 
 <script>
-firebase.initializeApp({
-apiKey:"YOUR_API_KEY",
-databaseURL:"YOUR_DATABASE_URL",
-projectId:"YOUR_PROJECT_ID"
-});
+const firebaseConfig = {
+  apiKey: "AIzaSyAAigsanR80Qe2Du4MmAxIMLBghPqy4nXE",
+  authDomain: "animezen-97635.firebaseapp.com",
+  databaseURL: "https://animezen-97635-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "animezen-97635",
+  storageBucket: "animezen-97635.firebasestorage.app",
+  messagingSenderId: "213401429170",
+  appId: "1:213401429170:web:a73c7cd2790586d92315ab"
+};
+
+firebase.initializeApp(firebaseConfig);
 
 const auth=firebase.auth();
 const db=firebase.database();
