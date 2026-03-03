@@ -5,14 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AnimeZen — Твой путь в мир аниме</title>
 
+    <!-- 1. ПОДКЛЮЧАЕМ БИБЛИОТЕКИ ПЕРВЫМИ -->
+    <script src="https://www.gstatic.com"></script>
+    <script src="https://www.gstatic.com"></script>
+    <script src="https://www.gstatic.com"></script>
+    <script src="https://www.gstatic.com"></script>
+
+    <!-- 2. СТИЛИ И ТЕЙЛВИНД -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com" rel="stylesheet">
-
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com"></script>
-    <script src="https://www.gstatic.com"></script>
-    <script src="https://www.gstatic.com"></script>
-    <script src="https://www.gstatic.com"></script>
 
     <style>
         :root { --accent: #9333ea; --bg: #09090b; --card-bg: #111118; }
@@ -34,13 +35,12 @@
         .modal.active { display: flex; }
         .btn-main { background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%); transition: 0.2s; font-weight: 600; }
         .btn-main:hover { transform: scale(1.02); box-shadow: 0 0 20px rgba(147, 51, 234, 0.4); }
-        .toast { background: #18181b; border: 1px solid #3f3f46; padding: 1rem; border-radius: 1rem; animation: slideIn 0.3s ease-out; color: white; }
-        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .toast { background: #18181b; border: 1px solid #3f3f46; padding: 1rem; border-radius: 1rem; color: white; box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
     </style>
 </head>
 <body>
 
-<div id="toastContainer" class="fixed top-6 right-6 flex flex-col gap-3 z-[1100]"></div>
+<div id="toastContainer" class="fixed top-6 right-6 flex flex-col gap-3 z-[9999]"></div>
 
 <header class="glass fixed top-0 w-full px-6 py-4 flex justify-between items-center z-50">
     <div class="text-2xl font-extrabold tracking-tighter cursor-pointer" onclick="location.reload()">ANIME<span class="text-purple-500">ZEN</span></div>
@@ -61,14 +61,14 @@
 
     <section id="newsSection" class="hidden">
         <h2 class="text-3xl font-bold mb-8 text-purple-400">Новости</h2>
-        <div id="newsContainer" class="grid gap-6">В разработке...</div>
+        <div id="newsContainer" class="grid gap-6 text-gray-400">Раздел в разработке...</div>
     </section>
 </main>
 
 <!-- МОДАЛКА ПЛЕЕРА -->
 <div id="playerModal" class="modal" onclick="if(event.target===this) toggleModal('playerModal')">
-    <div class="bg-[#0f0f14] border border-white/5 p-2 rounded-[2rem] w-full max-w-4xl">
-        <div class="aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl">
+    <div class="bg-[#0f0f14] border border-white/5 p-2 rounded-[2rem] w-full max-w-4xl shadow-2xl">
+        <div class="aspect-video bg-black rounded-2xl overflow-hidden">
             <iframe id="playerFrame" class="w-full h-full" allowfullscreen></iframe>
         </div>
         <div class="p-6">
@@ -76,10 +76,10 @@
                 <div id="ratingStars" class="flex gap-2 text-2xl"></div>
                 <div class="text-gray-400">Средняя оценка: <span id="avgRating" class="text-white font-bold">0</span></div>
             </div>
-            <div id="comments" class="max-h-40 overflow-y-auto space-y-2 mb-4 text-sm"></div>
+            <div id="comments" class="max-h-40 overflow-y-auto space-y-2 mb-4 text-sm scrollbar-hide"></div>
             <div class="flex gap-2">
-                <input id="commentInput" class="flex-1 bg-white/5 border border-white/10 p-3 rounded-xl focus:outline-none" placeholder="Ваш отзыв...">
-                <button onclick="addComment()" class="btn-main px-6 rounded-xl">🚀</button>
+                <input id="commentInput" class="flex-1 bg-white/5 border border-white/10 p-4 rounded-2xl focus:outline-none focus:border-purple-500 transition" placeholder="Ваш отзыв...">
+                <button onclick="addComment()" class="btn-main px-8 rounded-2xl">🚀</button>
             </div>
         </div>
     </div>
@@ -88,12 +88,17 @@
 <!-- МОДАЛКА ПРОФИЛЯ -->
 <div id="profileModal" class="modal" onclick="if(event.target===this) toggleModal('profileModal')">
     <div class="bg-[#0f0f14] border border-white/10 p-8 rounded-[2.5rem] w-full max-w-md text-center">
-        <img id="avatarPreview" class="w-28 h-28 mx-auto mb-6 rounded-full object-cover border-4 border-purple-600/30 shadow-2xl" src="https://via.placeholder.com">
-        <input type="file" id="avatarInput" class="mb-4 text-xs text-gray-500">
+        <div class="relative inline-block mb-6">
+            <img id="avatarPreview" class="w-32 h-32 rounded-full object-cover border-4 border-purple-600/30" src="https://via.placeholder.com">
+            <label class="absolute bottom-0 right-0 bg-purple-600 p-2 rounded-full cursor-pointer hover:bg-purple-500 transition">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" stroke-width="2" stroke-linecap="round""")/>></svg>
+                <input type="file" id="avatarInput" class="hidden" onchange="saveProfile()">
+            </label>
+        </div>
         <input id="nicknameInput" class="w-full bg-white/5 border border-white/10 p-4 rounded-2xl mb-4 text-center text-xl font-bold focus:outline-none" placeholder="Никнейм">
         <div class="grid grid-cols-2 gap-4 mb-6 text-sm">
-            <div class="bg-white/5 p-4 rounded-2xl"><div>Аниме</div><div id="animeCount" class="text-xl font-bold text-purple-400">0</div></div>
             <div class="bg-white/5 p-4 rounded-2xl"><div>ID</div><div id="profileId" class="text-xl font-bold text-purple-400">-</div></div>
+            <div class="bg-white/5 p-4 rounded-2xl"><div>Аниме</div><div id="animeCount" class="text-xl font-bold text-purple-400">0</div></div>
         </div>
         <button onclick="saveProfile()" class="w-full btn-main py-4 rounded-2xl font-bold">Сохранить</button>
     </div>
@@ -101,28 +106,35 @@
 
 <!-- АДМИН ПАНЕЛЬ -->
 <div id="adminModal" class="modal" onclick="if(event.target===this) toggleModal('adminModal')">
-    <div class="bg-[#0f0f14] border border-white/10 p-8 rounded-[2.5rem] w-full max-w-md">
+    <div class="bg-[#0f0f14] border border-white/10 p-8 rounded-[2.5rem] w-full max-w-md shadow-2xl">
         <h2 class="text-2xl font-bold mb-6 text-purple-400">Добавить Аниме</h2>
         <div class="space-y-4">
-            <input id="admTitle" class="w-full bg-white/5 border border-white/10 p-3 rounded-xl focus:outline-none" placeholder="Название">
-            <input id="admPoster" class="w-full bg-white/5 border border-white/10 p-3 rounded-xl focus:outline-none" placeholder="Ссылка на постер (URL)">
-            <input id="admEmbed" class="w-full bg-white/5 border border-white/10 p-3 rounded-xl focus:outline-none" placeholder="Ссылка на плеер (src из iframe)">
+            <input id="admTitle" class="w-full bg-white/5 border border-white/10 p-4 rounded-2xl focus:outline-none" placeholder="Название">
+            <input id="admPoster" class="w-full bg-white/5 border border-white/10 p-4 rounded-2xl focus:outline-none" placeholder="Ссылка на постер (URL)">
+            <input id="admEmbed" class="w-full bg-white/5 border border-white/10 p-4 rounded-2xl focus:outline-none" placeholder="Ссылка на плеер (src)">
             <button onclick="addAnime()" class="w-full btn-main py-4 rounded-2xl font-bold mt-2">Опубликовать</button>
         </div>
     </div>
 </div>
 
+<!-- 3. ОСНОВНОЙ СКРИПТ -->
 <script>
-    firebase.initializeApp({
-        apiKey:"AIzaSyAAigsanR80Qe2Du4MmAxIMLBghPqy4nXE",
-        databaseURL:"https://animezen-97635-default-rtdb.europe-west1.firebasedatabase.app",
-        projectId:"animezen-97635",
-        storageBucket:"animezen-97635.appspot.com"
-    });
+    // Инициализация
+    const firebaseConfig = {
+        apiKey: "AIzaSyAAigsanR80Qe2Du4MmAxIMLBghPqy4nXE",
+        databaseURL: "https://animezen-97635-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "animezen-97635",
+        storageBucket: "animezen-97635.appspot.com"
+    };
 
-    const auth = firebase.auth(), db = firebase.database(), storage = firebase.storage();
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+    const storage = firebase.storage();
     const ADMIN_EMAIL = "rdzaurov093@gmail.com";
-    let currentUser = null, currentAnimeId = null;
+
+    let currentUser = null;
+    let currentAnimeId = null;
 
     function toast(text) {
         const t = document.createElement("div"); t.className = "toast"; t.innerText = text;
@@ -132,10 +144,10 @@
 
     function toggleModal(id) { document.getElementById(id).classList.toggle("active"); }
 
-    // --- AUTH ---
+    // --- АВТОРИЗАЦИЯ ---
     function login() {
         const provider = new firebase.auth.GoogleAuthProvider();
-        auth.signInWithPopup(provider).catch(e => toast("Ошибка входа"));
+        auth.signInWithPopup(provider).catch(e => toast("Ошибка входа: " + e.message));
     }
 
     function logout() { auth.signOut().then(() => location.reload()); }
@@ -147,15 +159,19 @@
             document.getElementById("logoutBtn").classList.remove("hidden");
             if (user.email === ADMIN_EMAIL) document.getElementById("adminBtn").classList.remove("hidden");
             
-            // Проверка профиля в БД
             const s = await db.ref("users/" + user.uid).once("value");
             if (!s.exists()) {
-                await db.ref("users/" + user.uid).set({ nickname: user.displayName, siteId: Math.floor(Math.random()*9999), animeCount: 0 });
+                await db.ref("users/" + user.uid).set({ 
+                    nickname: user.displayName, 
+                    siteId: Math.floor(Math.random()*9999), 
+                    animeCount: 0,
+                    avatar: user.photoURL || ""
+                });
             }
         }
     });
 
-    // --- PROFILE ---
+    // --- ПРОФИЛЬ ---
     async function openProfile() {
         if (!currentUser) return toast("Войдите!");
         const s = await db.ref("users/" + currentUser.uid).once("value");
@@ -170,29 +186,34 @@
     async function saveProfile() {
         const file = document.getElementById("avatarInput").files[0];
         let url = document.getElementById("avatarPreview").src;
+        
         if (file) {
             const ref = storage.ref("avatars/" + currentUser.uid);
             await ref.put(file);
             url = await ref.getDownloadURL();
         }
-        await db.ref("users/" + currentUser.uid).update({ nickname: document.getElementById("nicknameInput").value, avatar: url });
+        
+        await db.ref("users/" + currentUser.uid).update({ 
+            nickname: document.getElementById("nicknameInput").value, 
+            avatar: url 
+        });
         document.getElementById("avatarPreview").src = url;
-        toast("Сохранено!");
+        toast("Профиль сохранен!");
     }
 
-    // --- ADM PANEL ---
+    // --- АДМИН ПАНЕЛЬ ---
     function addAnime() {
         const title = document.getElementById("admTitle").value;
         const poster = document.getElementById("admPoster").value;
         const embed = document.getElementById("admEmbed").value;
-        if (!title || !poster || !embed) return toast("Заполните поля!");
+        if (!title || !poster || !embed) return toast("Заполните все поля!");
         
         db.ref("anime").push({ title, poster, embed, rating: 0 });
         toast("Аниме добавлено!");
         toggleModal("adminModal");
     }
 
-    // --- LOAD ANIME ---
+    // --- ЗАГРУЗКА ДАННЫХ ---
     db.ref("anime").on("value", snap => {
         const grid = document.getElementById("animeGrid");
         grid.innerHTML = "";
@@ -201,9 +222,9 @@
             grid.innerHTML += `
                 <div class="anime-card group cursor-pointer" onclick="playAnime('${child.key}', '${a.embed}')">
                     <img src="${a.poster}" class="w-full aspect-[2/3] object-cover">
-                    <div class="p-3">
+                    <div class="p-4">
                         <div class="font-bold text-sm truncate">${a.title}</div>
-                        <div class="text-xs text-yellow-500 mt-1">⭐ ${a.rating || 0}</div>
+                        <div class="text-xs text-yellow-500 mt-2">⭐ ${a.rating || 0}</div>
                     </div>
                 </div>`;
         });
@@ -226,26 +247,30 @@
         const cont = document.getElementById("comments");
         db.ref("anime/" + currentAnimeId + "/comments").on("value", s => {
             cont.innerHTML = "";
-            s.forEach(c => { cont.innerHTML += `<div class="bg-white/5 p-2 rounded-lg">${c.val().text}</div>`; });
+            s.forEach(c => { cont.innerHTML += `<div class="bg-white/5 p-3 rounded-xl border-l-2 border-purple-600">${c.val().text}</div>`; });
         });
     }
 
     function addComment() {
         const inp = document.getElementById("commentInput");
-        if (!currentUser || !inp.value) return toast("Войдите!");
+        if (!currentUser || !inp.value.trim()) return toast("Войдите и введите текст!");
         db.ref("anime/" + currentAnimeId + "/comments").push({ text: inp.value });
         inp.value = "";
     }
 
     function loadRating() {
-        const stars = document.getElementById("ratingStars"); stars.innerHTML = "";
-        for(let i=1; i<=5; i++) stars.innerHTML += `<span class="cursor-pointer" onclick="rate(${i})">⭐</span>`;
+        const stars = document.getElementById("ratingStars"); 
+        stars.innerHTML = "";
+        for(let i=1; i<=5; i++) stars.innerHTML += `<span class="cursor-pointer hover:scale-125 transition" onclick="rate(${i})">⭐</span>`;
+        db.ref("anime/" + currentAnimeId + "/rating").on("value", s => {
+            document.getElementById("avgRating").innerText = s.val() || 0;
+        });
     }
 
     function rate(v) {
         if (!currentUser) return toast("Войдите!");
         db.ref("anime/" + currentAnimeId + "/rating").set(v);
-        toast("Оценено!");
+        toast("Оценка сохранена!");
     }
 </script>
 
