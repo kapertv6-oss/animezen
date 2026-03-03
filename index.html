@@ -4,244 +4,253 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AnimeZen — Твой путь в мир аниме</title>
+    
+    <!-- ПОДКЛЮЧЕНИЕ БИБЛИОТЕК -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com"></script>
+    <script src="https://www.gstatic.com"></script>
+    
     <link href="https://fonts.googleapis.com" rel="stylesheet">
     <style>
         body { background-color: #060606; color: #f0f0f0; font-family: 'Inter', sans-serif; overflow-x: hidden; }
         
-        /* Фирменные стили и свечение */
         .purple-gradient { background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%); }
-        .purple-glow { box-shadow: 0 0 25px rgba(168, 85, 247, 0.4); }
+        .purple-glow { box-shadow: 0 0 30px rgba(168, 85, 247, 0.3); }
         .text-purple { color: #a855f7; }
         
         /* МОДАЛЬНЫЕ ОКНА */
-        .modal { display: none; background: rgba(0,0,0,0.95); backdrop-filter: blur(15px); z-index: 1000; position: fixed; inset: 0; align-items: center; justify-content: center; }
+        .modal { display: none; background: rgba(0,0,0,0.96); backdrop-filter: blur(20px); z-index: 1000; position: fixed; inset: 0; align-items: center; justify-content: center; }
         .modal.active { display: flex; }
-        .tab-active { border-bottom: 3px solid #a855f7 !important; color: #a855f7 !important; opacity: 1 !important; }
+        .tab-active { border-bottom: 4px solid #a855f7 !important; color: #a855f7 !important; opacity: 1 !important; }
 
-        /* ТА САМАЯ АНИМАЦИЯ КАРТОЧЕК */
+        /* ТА САМАЯ ПРУЖИНИСТАЯ АНИМАЦИЯ КАРТОЧЕК */
         .anime-card-wrap { 
-            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
             will-change: transform;
         }
         .anime-card-wrap:hover { 
-            transform: translateY(-15px) scale(1.03); 
-            z-index: 10;
+            transform: translateY(-18px) scale(1.04); 
+            z-index: 20;
         }
-        .anime-card-wrap img { transition: transform 0.8s ease; }
-        .anime-card-wrap:hover img { transform: scale(1.1); }
+        .anime-card-wrap img { transition: transform 0.9s ease; }
+        .anime-card-wrap:hover img { transform: scale(1.12); }
 
-        /* Hero и Поиск */
-        .hero-bg { background: linear-gradient(to right, #060606 30%, transparent 100%), url('https://images.alphacoders.com'); background-size: cover; background-position: center; }
-        .search-input { background: rgba(255,255,255,0.03); border: 1px solid rgba(168,85,247,0.1); backdrop-filter: blur(10px); transition: 0.3s; }
-        .search-input:focus { border-color: #a855f7; background: rgba(255,255,255,0.07); box-shadow: 0 0 20px rgba(168, 85, 247, 0.1); }
+        /* ДИЗАЙН ГЛАВНОГО МЕНЮ (HERO) */
+        .hero-bg { 
+            background: linear-gradient(to right, #060606 35%, transparent 100%), 
+            url('https://images.alphacoders.com'); 
+            background-size: cover; 
+            background-position: center; 
+        }
         
-        #playerContainer iframe { width: 100%; height: 100%; border: none; border-radius: 24px; }
+        .search-input { 
+            background: rgba(255,255,255,0.03); 
+            border: 1px solid rgba(168,85,247,0.1); 
+            backdrop-filter: blur(10px); 
+            transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+        }
+        .search-input:focus { 
+            border-color: #a855f7; 
+            background: rgba(255,255,255,0.08); 
+            box-shadow: 0 0 25px rgba(168, 85, 247, 0.15); 
+            width: 110%;
+        }
+
+        #playerContainer iframe { width: 100%; height: 100%; border: none; border-radius: 32px; }
     </style>
 </head>
 <body>
 
     <!-- Шапка -->
-    <header class="border-b border-purple-900/20 py-5 px-6 bg-[#0a0a0a]/80 backdrop-blur-xl sticky top-0 z-50">
+    <header class="border-b border-purple-900/20 py-6 px-8 bg-[#0a0a0a]/80 backdrop-blur-2xl sticky top-0 z-50">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
-            <div class="text-2xl font-black tracking-tighter cursor-pointer shrink-0" onclick="location.reload()">
+            <div class="text-3xl font-black tracking-tighter cursor-pointer shrink-0" onclick="location.reload()">
                 <span class="text-purple italic font-black">ANIME</span>ZEN
             </div>
             
-            <div class="hidden md:flex flex-1 max-w-md mx-10">
-                <input type="text" oninput="handleSearch(this.value)" placeholder="Поиск любимого аниме..." class="search-input w-full px-7 py-3 rounded-full text-sm outline-none">
+            <div class="hidden md:flex flex-1 max-w-md mx-12">
+                <input type="text" oninput="handleSearch(this.value)" placeholder="Поиск любимого аниме..." class="search-input w-full px-8 py-3.5 rounded-full text-sm outline-none">
             </div>
 
-            <div class="flex items-center space-x-4">
-                <a href="https://t.me/AnimeZenCinema" target="_blank" class="bg-[#24A1DE] hover:scale-105 text-white px-5 py-2.5 rounded-full text-[10px] font-black uppercase transition-all shadow-lg">ТЕЛЕГРАМ</a>
-                <a id="adminLink" href="#" onclick="toggleModal('adminPanel')" class="hidden text-purple font-black border border-purple-500/30 px-5 py-2.5 rounded-full text-[10px] uppercase hover:bg-purple-500/10 transition">АДМИНКА</a>
-                <button id="authBtn" onclick="toggleModal('authModal')" class="purple-gradient purple-glow hover:scale-110 text-white px-8 py-2.5 rounded-full text-[10px] font-black uppercase transition-all">ВОЙТИ</button>
-                <button id="logoutBtn" onclick="handleLogout()" class="hidden text-red-500 font-black text-[10px] uppercase hover:underline transition">ВЫЙТИ</button>
+            <div class="flex items-center space-x-5">
+                <a href="https://t.me" target="_blank" class="bg-[#24A1DE] hover:scale-110 text-white px-6 py-3 rounded-full text-[11px] font-black uppercase transition-all shadow-lg">ТЕЛЕГРАМ</a>
+                <a id="adminLink" href="#" onclick="openModal('adminPanel')" class="hidden text-purple font-black border border-purple-500/40 px-6 py-3 rounded-full text-[11px] uppercase hover:bg-purple-500/10 transition">АДМИНКА</a>
+                <button id="authBtn" onclick="openModal('authModal')" class="purple-gradient purple-glow hover:scale-110 text-white px-9 py-3 rounded-full text-[11px] font-black uppercase transition-all tracking-widest">ВОЙТИ</button>
+                <button id="logoutBtn" onclick="handleLogout()" class="hidden text-red-500 font-black text-[11px] uppercase hover:underline transition">ВЫЙТИ</button>
             </div>
         </div>
     </header>
 
-    <!-- Hero -->
-    <section id="heroSection" class="relative h-[450px] flex items-center">
-        <div class="absolute inset-0 hero-bg opacity-40"></div>
-        <div class="relative max-w-7xl mx-auto px-6 w-full">
-            <div class="max-w-xl">
-                <span class="bg-purple-600 text-white text-[10px] px-3 py-1 rounded-md font-bold uppercase tracking-widest">Premium Edition</span>
-                <h2 class="text-7xl md:text-8xl font-black mt-4 uppercase italic leading-none tracking-tighter shadow-purple-500/20">ANIME<span class="text-purple">ZEN</span></h2>
-                <p class="mt-5 text-gray-400 text-sm md:text-base leading-relaxed max-w-sm">Твоя приватная коллекция аниме с авто-сохранением в GitHub.</p>
+    <!-- ГЛАВНОЕ МЕНЮ (HERO SECTION) -->
+    <section id="heroSection" class="relative h-[500px] flex items-center shadow-2xl overflow-hidden">
+        <div class="absolute inset-0 hero-bg opacity-50"></div>
+        <div class="relative max-w-7xl mx-auto px-8 w-full">
+            <div class="max-w-2xl">
+                <span class="bg-purple-600 text-white text-[11px] px-4 py-1.5 rounded-lg font-bold uppercase tracking-[0.2em]">Cinema Experience</span>
+                <h2 class="text-7xl md:text-9xl font-black mt-6 uppercase italic leading-none tracking-tighter">ANIME<span class="text-purple">ZEN</span></h2>
+                <p class="mt-6 text-gray-400 text-base md:text-lg leading-relaxed max-w-md font-medium">Твоя приватная зона комфорта. Добавляй лучшие тайтлы в облако и смотри их в идеальном качестве.</p>
             </div>
         </div>
     </section>
 
-    <!-- Сетка -->
-    <main class="max-w-7xl mx-auto px-6 py-16 min-h-[600px]">
-        <div class="flex items-center space-x-4 mb-12">
-            <div class="h-8 w-1.5 purple-gradient rounded-full"></div>
-            <h3 id="gridTitle" class="text-3xl font-black uppercase tracking-tighter italic">НЕДАВНИЕ <span class="text-purple">ОБНОВЛЕНИЯ</span></h3>
+    <!-- Сетка контента -->
+    <main class="max-w-7xl mx-auto px-8 py-20 min-h-[700px]">
+        <div class="flex items-center space-x-6 mb-16">
+            <div class="h-10 w-2 purple-gradient rounded-full"></div>
+            <h3 id="gridTitle" class="text-4xl font-black uppercase tracking-tighter italic">НЕДАВНИЕ <span class="text-purple">ОБНОВЛЕНИЯ</span></h3>
         </div>
-        <div id="animeGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-8 text-white">
-            <!-- Сюда попадут данные -->
+        <div id="animeGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-10 text-white">
+            <!-- Сюда попадут данные из Firebase -->
         </div>
     </main>
 
-    <!-- Модалка Входа/Регистрации -->
+    <!-- Модалка Входа / Регистрации -->
     <div id="authModal" class="modal p-4">
-        <div class="bg-[#0f0f0f] border border-purple-500/20 w-full max-w-md rounded-[3rem] p-10 relative shadow-2xl">
-            <button onclick="toggleModal('authModal')" class="absolute top-8 right-8 text-gray-500 text-2xl hover:text-white transition">&times;</button>
-            
-            <div class="flex space-x-8 mb-10 border-b border-gray-900">
-                <button id="tabLogin" onclick="switchAuth('login')" class="pb-3 text-lg font-black tab-active transition-all outline-none">ВХОД</button>
-                <button id="tabReg" onclick="switchAuth('reg')" class="pb-3 text-lg font-black text-gray-600 opacity-50 hover:opacity-100 transition-all outline-none">РЕГИСТРАЦИЯ</button>
+        <div class="bg-[#0f0f0f] border border-purple-500/20 w-full max-w-md rounded-[3.5rem] p-12 relative shadow-2xl">
+            <button onclick="closeModal('authModal')" class="absolute top-10 right-10 text-gray-500 text-3xl hover:text-white transition">&times;</button>
+            <div class="flex space-x-10 mb-12 border-b border-gray-900 text-white">
+                <button id="tabLogin" onclick="switchAuth('login')" class="pb-4 text-xl font-black tab-active outline-none transition-all">ВХОД</button>
+                <button id="tabReg" onclick="switchAuth('reg')" class="pb-4 text-xl font-black text-gray-600 opacity-50 outline-none transition-all">РЕГИСТРАЦИЯ</button>
             </div>
-
-            <form id="formLogin" class="space-y-5" onsubmit="handleLogin(event)">
-                <input id="loginUser" type="text" placeholder="Логин" class="w-full bg-[#161616] border border-gray-800 rounded-2xl px-6 py-4 outline-none text-white focus:border-purple-500 transition-all" required>
-                <input id="loginPass" type="password" placeholder="Пароль" class="w-full bg-[#161616] border border-gray-800 rounded-2xl px-6 py-4 outline-none text-white focus:border-purple-500 transition-all" required>
-                <button type="submit" class="w-full purple-gradient py-5 rounded-2xl font-black uppercase tracking-widest shadow-lg hover:scale-[1.02] transition-all">ВОЙТИ</button>
+            <form id="formLogin" class="space-y-6" onsubmit="handleLogin(event)">
+                <input id="loginUser" type="text" placeholder="Логин" class="w-full bg-[#161616] border border-gray-800 rounded-[1.5rem] px-7 py-5 outline-none text-white focus:border-purple-500 transition-all">
+                <input id="loginPass" type="password" placeholder="Пароль" class="w-full bg-[#161616] border border-gray-800 rounded-[1.5rem] px-7 py-5 outline-none text-white focus:border-purple-500 transition-all">
+                <button type="submit" class="w-full purple-gradient py-5 rounded-[1.5rem] font-black uppercase tracking-widest shadow-xl hover:scale-[1.03] active:scale-95 transition-all">АВТОРИЗАЦИЯ</button>
             </form>
-
-            <form id="formReg" class="hidden space-y-5" onsubmit="event.preventDefault(); alert('Регистрация ограничена')">
-                <input type="text" placeholder="Логин" class="w-full bg-[#161616] border border-gray-800 rounded-2xl px-6 py-4 outline-none text-white focus:border-purple-500 transition-all">
-                <input type="email" placeholder="Email" class="w-full bg-[#161616] border border-gray-800 rounded-2xl px-6 py-4 outline-none text-white focus:border-purple-500 transition-all">
-                <button type="submit" class="w-full bg-gray-800 py-5 rounded-2xl font-black uppercase tracking-widest transition-all">СОЗДАТЬ АККАУНТ</button>
-            </form>
+            <div id="formReg" class="hidden text-center py-12 text-gray-600 italic text-lg">Регистрация временно закрыта админом.</div>
         </div>
     </div>
 
     <!-- Админка -->
     <div id="adminPanel" class="modal p-4">
-        <div class="bg-[#0a0a0a] border-2 border-purple-600/30 w-full max-w-xl rounded-[3rem] p-10 relative">
-            <button onclick="toggleModal('adminPanel')" class="absolute top-8 right-8 text-gray-500 text-2xl hover:text-white transition">&times;</button>
-            <h2 class="text-2xl font-black mb-8 uppercase text-purple italic">Добавить в базу</h2>
-            <form class="space-y-4" onsubmit="saveToGitHub(event)">
-                <input id="aTitle" type="text" placeholder="Название аниме" class="w-full bg-[#121212] border border-gray-800 rounded-2xl px-6 py-4 outline-none text-white focus:border-purple-500" required>
-                <input id="aImg" type="text" placeholder="URL Постера" class="w-full bg-[#121212] border border-gray-800 rounded-2xl px-6 py-4 outline-none text-white focus:border-purple-500" required>
-                <input id="aEp" type="text" placeholder="Номер серии" class="w-full bg-[#121212] border border-gray-800 rounded-2xl px-6 py-4 outline-none text-white focus:border-purple-500">
-                <textarea id="aFrame" placeholder="Вставь сюда <iframe...> код из Rutube" class="w-full bg-[#121212] border border-gray-800 rounded-2xl px-6 py-4 outline-none text-white h-32 text-xs" required></textarea>
-                <button id="saveBtn" class="w-full purple-gradient py-5 rounded-2xl font-black uppercase tracking-widest hover:scale-[1.02] transition">Опубликовать для всех</button>
+        <div class="bg-[#0a0a0a] border-2 border-purple-600/30 w-full max-w-xl rounded-[3.5rem] p-12 relative shadow-2xl">
+            <button onclick="closeModal('adminPanel')" class="absolute top-10 right-10 text-gray-500 text-3xl hover:text-white transition">&times;</button>
+            <h2 class="text-3xl font-black mb-10 uppercase text-purple italic tracking-tighter">Добавить в Облако</h2>
+            <form class="space-y-5" onsubmit="saveToFirebase(event)">
+                <input id="aTitle" type="text" placeholder="Название тайтла" class="w-full bg-[#121212] border border-gray-800 rounded-2xl px-7 py-5 outline-none text-white focus:border-purple-500" required>
+                <input id="aImg" type="text" placeholder="URL Постера (прямая ссылка)" class="w-full bg-[#121212] border border-gray-800 rounded-2xl px-7 py-5 outline-none text-white focus:border-purple-500" required>
+                <input id="aEp" type="text" placeholder="Номер серии (например: 12)" class="w-full bg-[#121212] border border-gray-800 rounded-2xl px-7 py-5 outline-none text-white focus:border-purple-500">
+                <textarea id="aFrame" placeholder="Вставь сюда <iframe...> код из Rutube" class="w-full bg-[#121212] border border-gray-800 rounded-2xl px-7 py-5 outline-none text-white h-36 font-mono text-xs" required></textarea>
+                <button id="saveBtn" class="w-full purple-gradient py-6 rounded-2xl font-black uppercase tracking-widest hover:scale-[1.02] transition-all">ОПУБЛИКОВАТЬ</button>
             </form>
         </div>
     </div>
 
     <!-- Плеер -->
     <div id="playerModal" class="modal p-4">
-        <div class="w-full max-w-6xl aspect-video relative bg-black rounded-[2.5rem] overflow-hidden shadow-2xl border border-purple-500/20">
-            <button onclick="closePlayer()" class="absolute top-6 right-6 z-50 bg-black/80 hover:bg-purple-600 w-12 h-12 rounded-full text-white text-3xl transition">&times;</button>
+        <div class="w-full max-w-6xl aspect-video relative bg-black rounded-[3rem] overflow-hidden border border-purple-500/20 shadow-2xl">
+            <button onclick="closeModal('playerModal')" class="absolute top-8 right-8 z-50 bg-black/80 hover:bg-purple-600 w-14 h-14 rounded-full text-white text-4xl transition-all">&times;</button>
             <div id="playerContainer" class="w-full h-full"></div>
         </div>
     </div>
 
     <script>
-        const GITHUB_CONFIG = {
-            token: "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", 
-            repo: "kapertv6-oss/animezen", // ЗАМЕНИ ТВОЙ_НИК
-            file: "data.json"
-        };
-
         const ADMIN_DATA = { user: "Admin", pass: "kjkszpj006" };
-        let isAdmin = localStorage.getItem('isZenAdmin') === 'true';
-        let allAnime = [];
 
-        function toggleModal(id) { document.getElementById(id).classList.toggle('active'); }
+        const firebaseConfig = {
+            apiKey: "AIzaSyAAigsanR80Qe2Du4MmAxIMLBghPqy4nXE",
+            databaseURL: "https://animezen-97635-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "animezen-97635"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let isAdmin = localStorage.getItem('isZenAdmin') === 'true';
+
+        function openModal(id) { document.getElementById(id).classList.add('active'); }
+        function closeModal(id) { 
+            document.getElementById(id).classList.remove('active'); 
+            if(id === 'playerModal') document.getElementById('playerContainer').innerHTML = '';
+        }
 
         function switchAuth(type) {
-            const isLogin = (type === 'login');
-            document.getElementById('formLogin').classList.toggle('hidden', !isLogin);
-            document.getElementById('formReg').classList.toggle('hidden', isLogin);
-            document.getElementById('tabLogin').className = isLogin ? 'pb-3 text-lg font-black tab-active outline-none' : 'pb-3 text-lg font-black text-gray-600 opacity-50 outline-none';
-            document.getElementById('tabReg').className = !isLogin ? 'pb-3 text-lg font-black tab-active outline-none' : 'pb-3 text-lg font-black text-gray-600 opacity-50 outline-none';
-        }
-
-        async function loadData() {
-            try {
-                const res = await fetch(`https://api.github.com{GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.file}?t=${Date.now()}`, {
-                    headers: { "Authorization": `token ${GITHUB_CONFIG.token}` }
-                });
-                const data = await res.json();
-                allAnime = JSON.parse(decodeURIComponent(escape(atob(data.content))));
-                render();
-            } catch (e) { document.getElementById('animeGrid').innerHTML = "База пуста или ошибка загрузки."; }
-        }
-
-        function render(filter = "") {
-            const grid = document.getElementById('animeGrid');
-            const filtered = allAnime.filter(a => a.title.toLowerCase().includes(filter));
-            
-            grid.innerHTML = filtered.reverse().map((item, idx) => `
-                <div class="anime-card-wrap relative">
-                    ${isAdmin ? `<button onclick="deleteAnime(${allAnime.length - 1 - idx})" class="absolute -top-3 -right-3 z-30 bg-red-600 text-white rounded-full w-8 h-8 font-black shadow-2xl hover:scale-125 transition">×</button>` : ''}
-                    <div class="cursor-pointer" onclick="openPlayer('${encodeURIComponent(item.frame)}')">
-                        <div class="relative overflow-hidden rounded-[2.5rem] aspect-[3/4.2] shadow-2xl">
-                            <img src="${item.img}" class="object-cover w-full h-full">
-                            <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent opacity-0 hover:opacity-100 transition-opacity p-6 flex flex-col justify-end">
-                                <div class="purple-gradient text-white text-[9px] font-black px-4 py-1.5 rounded-full w-fit italic uppercase">Смотреть</div>
-                            </div>
-                            <div class="absolute top-5 left-5 bg-black/70 backdrop-blur-xl px-3 py-1 rounded-2xl text-[10px] font-black border border-white/10 italic">EP ${item.ep}</div>
-                        </div>
-                        <h4 class="mt-5 text-[13px] font-black truncate uppercase tracking-tighter text-center">${item.title}</h4>
-                    </div>
-                </div>`).join('');
-        }
-
-        async function saveToGitHub(e) {
-            e.preventDefault();
-            document.getElementById('saveBtn').innerText = "СОХРАНЕНИЕ...";
-            const newItem = {
-                title: document.getElementById('aTitle').value,
-                img: document.getElementById('aImg').value,
-                ep: document.getElementById('aEp').value,
-                frame: document.getElementById('aFrame').value
-            };
-            allAnime.push(newItem);
-            await pushToGitHub("Add " + newItem.title);
-            location.reload();
-        }
-
-        async function deleteAnime(index) {
-            if(!confirm('Удалить тайтл?')) return;
-            allAnime.splice(index, 1);
-            await pushToGitHub("Delete item");
-            location.reload();
-        }
-
-        async function pushToGitHub(msg) {
-            const getFile = await fetch(`https://api.github.com{GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.file}`, {
-                headers: { "Authorization": `token ${GITHUB_CONFIG.token}` }
-            });
-            const fData = await getFile.json();
-            const content = btoa(unescape(encodeURIComponent(JSON.stringify(allAnime, null, 2))));
-            await fetch(`https://api.github.com{GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.file}`, {
-                method: "PUT",
-                headers: { "Authorization": `token ${GITHUB_CONFIG.token}`, "Content-Type": "application/json" },
-                body: JSON.stringify({ message: msg, content: content, sha: fData.sha })
-            });
+            const isL = type === 'login';
+            document.getElementById('formLogin').classList.toggle('hidden', !isL);
+            document.getElementById('formReg').classList.toggle('hidden', isL);
+            document.getElementById('tabLogin').className = isL ? 'pb-4 text-xl font-black tab-active' : 'pb-4 text-xl font-black text-gray-600 opacity-50';
+            document.getElementById('tabReg').className = !isL ? 'pb-4 text-xl font-black tab-active' : 'pb-4 text-xl font-black text-gray-600 opacity-50';
         }
 
         function handleLogin(e) {
             e.preventDefault();
-            if(document.getElementById('loginUser').value === ADMIN_DATA.user && document.getElementById('loginPass').value === ADMIN_DATA.pass) {
+            const u = document.getElementById('loginUser').value;
+            const p = document.getElementById('loginPass').value;
+            if(u === ADMIN_DATA.user && p === ADMIN_DATA.pass) {
                 localStorage.setItem('isZenAdmin', 'true');
                 location.reload();
-            } else { alert("Ошибка!"); }
+            } else { alert("Ошибка доступа! Проверь данные."); }
         }
 
         function handleLogout() { localStorage.setItem('isZenAdmin', 'false'); location.reload(); }
-        function handleSearch(q) { render(q.toLowerCase()); }
+
+        function saveToFirebase(e) {
+            e.preventDefault();
+            document.getElementById('saveBtn').innerText = "ОБЛАЧНОЕ СОХРАНЕНИЕ...";
+            const item = {
+                title: document.getElementById('aTitle').value,
+                img: document.getElementById('aImg').value,
+                ep: document.getElementById('aEp').value,
+                frame: document.getElementById('aFrame').value,
+                ts: Date.now()
+            };
+            db.ref('animeList').push(item).then(() => {
+                closeModal('adminPanel');
+                e.target.reset();
+                document.getElementById('saveBtn').innerText = "ОПУБЛИКОВАТЬ";
+            });
+        }
+
+        db.ref('animeList').on('value', (snapshot) => {
+            const grid = document.getElementById('animeGrid');
+            const data = snapshot.val();
+            if(!data) { 
+                grid.innerHTML = '<div class="col-span-full py-32 text-center opacity-10 text-3xl font-black italic uppercase tracking-widest">Облако AnimeZen пусто</div>'; 
+                return; 
+            }
+            
+            let html = '';
+            Object.keys(data).reverse().forEach(key => {
+                const item = data[key];
+                html += `
+                <div class="anime-card-wrap relative group">
+                    ${isAdmin ? `<button onclick="deleteAnime('${key}')" class="absolute -top-4 -right-4 z-40 bg-red-600 text-white rounded-full w-10 h-10 font-black shadow-2xl hover:scale-125 transition-all">×</button>` : ''}
+                    <div class="cursor-pointer" onclick="openPlayer('${encodeURIComponent(item.frame)}')">
+                        <div class="relative overflow-hidden rounded-[2.8rem] aspect-[3/4.3] shadow-2xl transition-all duration-500 group-hover:shadow-purple-500/20">
+                            <img src="${item.img}" class="object-cover w-full h-full transition duration-700 group-hover:scale-110">
+                            <div class="absolute inset-0 bg-gradient-to-t from-[#060606] via-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 p-8 flex flex-col justify-end text-left">
+                                <div class="purple-gradient text-white text-[10px] font-black px-5 py-2 rounded-full w-fit italic uppercase tracking-widest">Смотреть</div>
+                            </div>
+                            <div class="absolute top-6 left-6 bg-black/70 backdrop-blur-2xl px-4 py-1.5 rounded-[1rem] text-[11px] font-black border border-white/10 italic text-white uppercase tracking-tighter">EPISODE ${item.ep}</div>
+                        </div>
+                        <h4 class="mt-6 text-[14px] font-black truncate uppercase tracking-tighter text-center text-white group-hover:text-purple transition-colors duration-300">${item.title}</h4>
+                    </div>
+                </div>`;
+            });
+            grid.innerHTML = html;
+        });
+
+        function deleteAnime(key) { if(confirm('Удалить этот тайтл из облака?')) db.ref('animeList/' + key).remove(); }
         
         function openPlayer(enc) {
             let f = decodeURIComponent(enc).replace(/width=".*?"/, 'width="100%"').replace(/height=".*?"/, 'height="100%"');
             document.getElementById('playerContainer').innerHTML = f;
-            toggleModal('playerModal');
+            openModal('playerModal');
         }
-        function closePlayer() { document.getElementById('playerContainer').innerHTML = ''; toggleModal('playerModal'); }
+
+        function handleSearch(q) {
+            const cards = document.querySelectorAll('.anime-card-wrap');
+            cards.forEach(card => {
+                const title = card.querySelector('h4').innerText.toLowerCase();
+                card.style.display = title.includes(q.toLowerCase()) ? 'block' : 'none';
+            });
+        }
 
         if(isAdmin) {
             document.getElementById('adminLink').classList.remove('hidden');
             document.getElementById('logoutBtn').classList.remove('hidden');
             document.getElementById('authBtn').classList.add('hidden');
         }
-        loadData();
     </script>
 </body>
 </html>
-
