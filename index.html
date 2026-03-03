@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AnimeZen — Твой путь в мир аниме</title>
+<title>AnimeZen — Cloud Cinema</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 
@@ -12,21 +12,91 @@
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
+<!-- AOS animation -->
+<link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet">
+<script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+
 <style>
-body { background:#060606; color:#f0f0f0; font-family:Inter,sans-serif }
-.purple-gradient { background: linear-gradient(135deg,#a855f7,#7c3aed) }
-.modal{display:none;background:rgba(0,0,0,.95);backdrop-filter:blur(15px);z-index:1000}
-.modal.active{display:flex}
-#playerContainer iframe{width:100%;height:100%;border:none;border-radius:20px}
+body{
+background: radial-gradient(circle at 20% 30%, #1a0033, #050505 60%);
+color:#f0f0f0;
+font-family:Inter,sans-serif;
+overflow-x:hidden;
+}
+
+/* animated glow */
+body::before{
+content:"";
+position:fixed;
+top:-50%;
+left:-50%;
+width:200%;
+height:200%;
+background:radial-gradient(circle,#7c3aed33 0%,transparent 60%);
+animation:rotateGlow 20s linear infinite;
+z-index:-1;
+}
+@keyframes rotateGlow{
+0%{transform:rotate(0deg)}
+100%{transform:rotate(360deg)}
+}
+
+.purple-gradient{
+background:linear-gradient(135deg,#a855f7,#7c3aed);
+transition:.4s;
+}
+.purple-gradient:hover{
+transform:scale(1.05);
+box-shadow:0 0 30px #a855f7aa;
+}
+
+.card{
+transition:.4s;
+transform-style:preserve-3d;
+}
+.card:hover{
+transform:rotateY(8deg) rotateX(4deg) scale(1.05);
+box-shadow:0 30px 60px rgba(124,58,237,.5);
+}
+
+.modal{
+display:none;
+position:fixed;
+inset:0;
+background:rgba(0,0,0,.9);
+backdrop-filter:blur(20px);
+align-items:center;
+justify-content:center;
+opacity:0;
+transition:.3s;
+}
+.modal.active{
+display:flex;
+opacity:1;
+animation:scaleIn .4s ease;
+}
+@keyframes scaleIn{
+from{transform:scale(.8);opacity:0}
+to{transform:scale(1);opacity:1}
+}
+
+#playerContainer iframe{
+width:100%;
+height:100%;
+border:none;
+border-radius:20px;
+box-shadow:0 0 40px #7c3aedaa;
+}
 </style>
 </head>
 <body>
 
-<header class="py-4 px-6 flex justify-between items-center border-b border-purple-900/20">
+<header class="py-4 px-6 flex justify-between items-center border-b border-purple-900/20 sticky top-0 z-50">
 <div class="text-2xl font-black"><span class="text-purple-500">ANIME</span>ZEN</div>
 
-<div class="flex space-x-3">
-<a id="adminLink" onclick="toggleModal('adminPanel')" class="hidden text-purple-500 cursor-pointer">Админ</a>
+<div class="flex space-x-3 items-center">
+<span id="userEmail" class="text-sm text-purple-400 hidden"></span>
+<a id="adminLink" onclick="toggleModal('adminPanel')" class="hidden text-purple-400 cursor-pointer text-sm">Админ</a>
 <button id="authBtn" onclick="toggleModal('authModal')" class="purple-gradient px-5 py-2 rounded text-xs font-black">Войти</button>
 <button id="logoutBtn" onclick="logout()" class="hidden bg-red-600 px-4 py-2 rounded text-xs">Выйти</button>
 </div>
@@ -37,22 +107,37 @@ body { background:#060606; color:#f0f0f0; font-family:Inter,sans-serif }
 <div id="animeGrid" class="grid grid-cols-2 md:grid-cols-4 gap-6"></div>
 </main>
 
-<!-- AUTH -->
-<div id="authModal" class="modal fixed inset-0 items-center justify-center">
+<!-- AUTH MODAL -->
+<div id="authModal" class="modal">
 <div class="bg-[#111] p-10 rounded-3xl w-96 relative">
 <button onclick="toggleModal('authModal')" class="absolute right-6 top-4 text-2xl">×</button>
-<h2 class="text-xl mb-6 font-black">Вход</h2>
+
+<div class="flex justify-between mb-6">
+<button onclick="switchTab('login')" id="tabLogin" class="font-bold text-purple-400">Вход</button>
+<button onclick="switchTab('register')" id="tabRegister" class="font-bold text-gray-500">Регистрация</button>
+</div>
+
+<div id="loginBox">
 <input id="email" type="email" placeholder="Email" class="w-full mb-4 p-3 bg-[#222] rounded">
 <input id="password" type="password" placeholder="Пароль" class="w-full mb-6 p-3 bg-[#222] rounded">
 <button onclick="login()" class="w-full purple-gradient py-3 rounded font-black">Войти</button>
 </div>
+
+<div id="registerBox" class="hidden">
+<input id="regEmail" type="email" placeholder="Email" class="w-full mb-4 p-3 bg-[#222] rounded">
+<input id="regPassword" type="password" placeholder="Пароль (мин 6 символов)" class="w-full mb-6 p-3 bg-[#222] rounded">
+<button onclick="register()" class="w-full purple-gradient py-3 rounded font-black">Зарегистрироваться</button>
+</div>
+
+</div>
 </div>
 
 <!-- ADMIN -->
-<div id="adminPanel" class="modal fixed inset-0 items-center justify-center">
+<div id="adminPanel" class="modal">
 <div class="bg-[#0a0a0a] p-10 rounded-3xl w-[500px] relative">
 <button onclick="toggleModal('adminPanel')" class="absolute right-6 top-4 text-2xl">×</button>
-<h2 class="text-xl font-black mb-6 text-purple-500">Добавить</h2>
+
+<h2 class="text-xl font-black mb-6 text-purple-400">Добавить аниме</h2>
 
 <input id="aTitle" placeholder="Название" class="w-full mb-3 p-3 bg-[#222] rounded">
 <input id="aImg" placeholder="URL постера" class="w-full mb-3 p-3 bg-[#222] rounded">
@@ -64,7 +149,7 @@ body { background:#060606; color:#f0f0f0; font-family:Inter,sans-serif }
 </div>
 
 <!-- PLAYER -->
-<div id="playerModal" class="modal fixed inset-0 items-center justify-center">
+<div id="playerModal" class="modal">
 <div class="w-full max-w-5xl aspect-video bg-black rounded-3xl relative">
 <button onclick="closePlayer()" class="absolute right-4 top-4 text-2xl z-50">×</button>
 <div id="playerContainer" class="w-full h-full"></div>
@@ -72,84 +157,73 @@ body { background:#060606; color:#f0f0f0; font-family:Inter,sans-serif }
 </div>
 
 <script>
-
-// 🔥 ТВОЙ Firebase
 firebase.initializeApp({
 apiKey:"AIzaSyAAigsanR80Qe2Du4MmAxIMLBghPqy4nXE",
 databaseURL:"https://animezen-97635-default-rtdb.europe-west1.firebasedatabase.app",
 projectId:"animezen-97635"
 });
 
-const auth = firebase.auth();
-const db = firebase.database();
-const ADMIN_EMAIL = "rdzaurov093@gmail.com";
+const auth=firebase.auth();
+const db=firebase.database();
+const ADMIN_EMAIL="rdzaurov093@gmail.com";
 
-// AUTH STATE
 auth.onAuthStateChanged(user=>{
 if(user){
-authBtn.classList.add("hidden");
+userEmail.textContent=user.email;
+userEmail.classList.remove("hidden");
 logoutBtn.classList.remove("hidden");
+authBtn.classList.add("hidden");
 
 if(user.email===ADMIN_EMAIL){
 adminLink.classList.remove("hidden");
 }
 }else{
-authBtn.classList.remove("hidden");
+userEmail.classList.add("hidden");
 logoutBtn.classList.add("hidden");
+authBtn.classList.remove("hidden");
 adminLink.classList.add("hidden");
 }
 });
 
-// LOGIN
 function login(){
 auth.signInWithEmailAndPassword(email.value,password.value)
 .then(()=>toggleModal('authModal'))
 .catch(e=>alert(e.message));
 }
 
-function logout(){
-auth.signOut();
+function register(){
+auth.createUserWithEmailAndPassword(regEmail.value,regPassword.value)
+.then(()=>toggleModal('authModal'))
+.catch(e=>alert(e.message));
 }
 
-// ADD
+function logout(){ auth.signOut(); }
+
 function addAnime(){
 if(!aTitle.value||!aImg.value||!aFrame.value){alert("Заполни всё");return;}
-
 db.ref("animeList").push({
 title:aTitle.value,
 img:aImg.value,
 ep:aEp.value,
 frame:aFrame.value
 });
-
-aTitle.value="";
-aImg.value="";
-aEp.value="";
-aFrame.value="";
-
 toggleModal('adminPanel');
 }
 
-// DELETE
 function deleteAnime(id){
 if(confirm("Удалить?")){
 db.ref("animeList/"+id).remove();
 }
 }
 
-// RENDER
 db.ref("animeList").on("value",snap=>{
 const data=snap.val();
 animeGrid.innerHTML="";
-
-if(!data){
-animeGrid.innerHTML="<div>Пусто</div>";
-return;
-}
+if(!data){animeGrid.innerHTML="<div>Пусто</div>";return;}
 
 Object.entries(data).reverse().forEach(([key,item])=>{
 animeGrid.innerHTML+=`
-<div class="relative group">
+<div class="card relative" data-aos="fade-up">
 ${auth.currentUser&&auth.currentUser.email===ADMIN_EMAIL?
 `<button onclick="deleteAnime('${key}')" class="absolute top-2 right-2 bg-red-600 w-7 h-7 rounded-full text-xs">×</button>`:""}
 <div onclick="openPlayer('${item.frame}')" class="cursor-pointer">
@@ -159,25 +233,32 @@ ${auth.currentUser&&auth.currentUser.email===ADMIN_EMAIL?
 </div>
 `;
 });
+AOS.init({duration:800,once:true});
 });
 
-// PLAYER
 function openPlayer(url){
-document.getElementById("playerContainer").innerHTML=
-`<iframe src="${url}" allowfullscreen></iframe>`;
+playerContainer.innerHTML=`<iframe src="${url}" allowfullscreen></iframe>`;
 toggleModal('playerModal');
 }
 
 function closePlayer(){
-document.getElementById("playerContainer").innerHTML="";
+playerContainer.innerHTML="";
 toggleModal('playerModal');
 }
 
-// MODAL
 function toggleModal(id){
 document.getElementById(id).classList.toggle("active");
 }
 
+function switchTab(tab){
+if(tab==="login"){
+loginBox.classList.remove("hidden");
+registerBox.classList.add("hidden");
+}else{
+loginBox.classList.add("hidden");
+registerBox.classList.remove("hidden");
+}
+}
 </script>
 
 </body>
