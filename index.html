@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AnimeZen — Твой путь в мир аниме</title>
+    <title>AnimeZen — Cloud Cinema</title>
     
-    <!-- ПОДКЛЮЧЕНИЕ БИБЛИОТЕК В ПРАВИЛЬНОМ ПОРЯДКЕ -->
+    <!-- ПОДКЛЮЧЕНИЕ БИБЛИОТЕК (САМЫЙ ВЕРХ) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com"></script>
     <script src="https://www.gstatic.com"></script>
@@ -28,7 +28,6 @@
 
         .hero-bg { background: linear-gradient(to right, #060606 35%, transparent 100%), url('https://images.alphacoders.com'); background-size: cover; background-position: center; }
         .search-input { background: rgba(255,255,255,0.03); border: 1px solid rgba(168,85,247,0.1); backdrop-filter: blur(10px); transition: 0.4s; }
-        .search-input:focus { border-color: #a855f7; background: rgba(255,255,255,0.08); box-shadow: 0 0 25px rgba(168, 85, 247, 0.15); width: 110%; }
         #playerContainer iframe { width: 100%; height: 100%; border: none; border-radius: 32px; }
     </style>
 </head>
@@ -50,7 +49,7 @@
         </div>
     </header>
 
-    <!-- Главное Меню -->
+    <!-- Главное Меню (Hero) -->
     <section id="heroSection" class="relative h-[500px] flex items-center shadow-2xl overflow-hidden">
         <div class="absolute inset-0 hero-bg opacity-50"></div>
         <div class="relative max-w-7xl mx-auto px-8 w-full">
@@ -62,7 +61,7 @@
         </div>
     </section>
 
-    <!-- Сетка контента -->
+    <!-- Сетка -->
     <main class="max-w-7xl mx-auto px-8 py-20 min-h-[700px]">
         <div class="flex items-center space-x-6 mb-16">
             <div class="h-10 w-2 purple-gradient rounded-full"></div>
@@ -84,14 +83,14 @@
                 <input id="loginPass" type="password" placeholder="Пароль" class="w-full bg-[#161616] border border-gray-800 rounded-[1.5rem] px-7 py-5 outline-none text-white focus:border-purple-500">
                 <button type="submit" class="w-full purple-gradient py-5 rounded-[1.5rem] font-black uppercase tracking-widest shadow-xl">АВТОРИЗАЦИЯ</button>
             </form>
-            <div id="formReg" class="hidden text-center py-12 text-gray-600 italic">Регистрация временно ограничена.</div>
+            <div id="formReg" class="hidden text-center py-12 text-gray-600 italic">Регистрация временно закрыта.</div>
         </div>
     </div>
 
     <!-- Плеер -->
     <div id="playerModal" class="modal p-4">
         <div class="w-full max-w-6xl aspect-video relative bg-black rounded-[3rem] overflow-hidden border border-purple-500/20 shadow-2xl">
-            <button onclick="closeModal('playerModal')" class="absolute top-8 right-8 z-50 bg-black/80 hover:bg-purple-600 w-14 h-14 rounded-full text-white text-4xl">&times;</button>
+            <button onclick="closeModal('playerModal')" class="absolute top-8 right-8 z-50 bg-black/80 hover:bg-purple-600 w-14 h-14 rounded-full text-white text-4xl transition-all">&times;</button>
             <div id="playerContainer" class="w-full h-full"></div>
         </div>
     </div>
@@ -99,23 +98,26 @@
     <!-- Админка -->
     <div id="adminPanel" class="modal p-4">
         <div class="bg-[#0a0a0a] border-2 border-purple-600/30 w-full max-w-xl rounded-[3.5rem] p-12 relative shadow-2xl">
-            <button onclick="closeModal('adminPanel')" class="absolute top-10 right-10 text-gray-500 text-3xl hover:text-white">&times;</button>
+            <button onclick="closeModal('adminPanel')" class="absolute top-10 right-10 text-gray-500 text-3xl hover:text-white transition">&times;</button>
             <h2 class="text-3xl font-black mb-10 uppercase text-purple italic">Добавить в Облако</h2>
             <form class="space-y-5" onsubmit="saveToFirebase(event)">
                 <input id="aTitle" type="text" placeholder="Название" class="w-full bg-[#121212] border border-gray-800 rounded-2xl px-7 py-5 outline-none text-white focus:border-purple-500" required>
                 <input id="aImg" type="text" placeholder="URL Постера" class="w-full bg-[#121212] border border-gray-800 rounded-2xl px-7 py-5 outline-none text-white focus:border-purple-500" required>
                 <input id="aEp" type="text" placeholder="Серия" class="w-full bg-[#121212] border border-gray-800 rounded-2xl px-7 py-5 outline-none text-white focus:border-purple-500">
-                <textarea id="aFrame" placeholder="Код <iframe...> из Rutube" class="w-full bg-[#121212] border border-gray-800 rounded-2xl px-7 py-5 outline-none text-white h-36 font-mono text-xs" required></textarea>
+                <textarea id="aFrame" placeholder="Вставь сюда <iframe...> код из Rutube" class="w-full bg-[#121212] border border-gray-800 rounded-2xl px-7 py-5 outline-none text-white h-36 font-mono text-xs" required></textarea>
                 <button id="saveBtn" class="w-full purple-gradient py-6 rounded-2xl font-black uppercase">ОПУБЛИКОВАТЬ</button>
             </form>
         </div>
     </div>
 
     <script>
-        // ГЛОБАЛЬНЫЙ ЗАПУСК ПОСЛЕ ЗАГРУЗКИ ВСЕХ СКРИПТОВ
-        window.addEventListener('load', function() {
+        const ADMIN_DATA = { user: "Admin", pass: "kjkszpj006" };
+        let isAdmin = localStorage.getItem('isZenAdmin') === 'true';
+
+        // ИНИЦИАЛИЗАЦИЯ ПОСЛЕ ЗАГРУЗКИ ВСЕХ СКРИПТОВ
+        window.onload = function() {
             if (typeof firebase === 'undefined') {
-                alert("Ошибка: Firebase не загрузился. Проверь интернет.");
+                console.error("Firebase load error");
                 return;
             }
 
@@ -128,16 +130,9 @@
             firebase.initializeApp(firebaseConfig);
             window.db = firebase.database();
             
-            startSite(); // Запускаем логику сайта
-        });
-
-        const ADMIN_DATA = { user: "Admin", pass: "kjkszpj006" };
-        let isAdmin = localStorage.getItem('isZenAdmin') === 'true';
-
-        function startSite() {
             renderAnime();
             checkAdminState();
-        }
+        };
 
         function openModal(id) { document.getElementById(id).classList.add('active'); }
         function closeModal(id) { 
@@ -234,3 +229,4 @@
     </script>
 </body>
 </html>
+
