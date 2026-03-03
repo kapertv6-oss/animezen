@@ -12,113 +12,176 @@
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
 <style>
-body{background:#0f0f14;color:#fff;font-family:Inter,sans-serif}
-.glass{background:rgba(20,20,30,.8);backdrop-filter:blur(20px)}
-.card{transition:.3s}
-.card:hover{transform:scale(1.05)}
-.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(10px);align-items:center;justify-content:center}
-.modal.active{display:flex}
-input,textarea{background:#1c1c24}
+body{
+background: radial-gradient(circle at 20% 30%, #1a0033, #0a0a0f 70%);
+color:#fff;
+font-family:Inter,sans-serif;
+overflow-x:hidden;
+}
+
+/* мягкий glow */
+body::before{
+content:"";
+position:fixed;
+top:-40%;
+left:-40%;
+width:180%;
+height:180%;
+background:radial-gradient(circle,#7c3aed33 0%,transparent 60%);
+animation:rotate 25s linear infinite;
+z-index:-1;
+}
+@keyframes rotate{
+0%{transform:rotate(0deg)}
+100%{transform:rotate(360deg)}
+}
+
+/* стеклянная шапка */
+.glass{
+background:rgba(20,20,30,.6);
+backdrop-filter:blur(20px);
+border-bottom:1px solid rgba(255,255,255,.05);
+}
+
+/* карточка */
+.anime-card{
+transition:.4s cubic-bezier(.2,.8,.2,1);
+}
+.anime-card:hover{
+transform:scale(1.07);
+box-shadow:0 20px 40px rgba(124,58,237,.4);
+}
+
+/* модалки */
+.modal{
+display:none;
+position:fixed;
+inset:0;
+background:rgba(0,0,0,.85);
+backdrop-filter:blur(20px);
+align-items:center;
+justify-content:center;
+}
+.modal.active{
+display:flex;
+animation:fade .3s ease;
+}
+@keyframes fade{
+from{opacity:0}
+to{opacity:1}
+}
+
+input{
+background:#1e1e2a;
+outline:none;
+}
+
+button{
+transition:.3s;
+}
+button:hover{
+transform:scale(1.05);
+}
 </style>
 </head>
 <body>
 
-<header class="glass fixed top-0 w-full px-8 py-4 flex justify-between items-center z-50">
-<div class="text-2xl font-black text-purple-400">ANIMEZEN</div>
+<!-- HEADER -->
+<header class="glass fixed top-0 w-full z-50 px-8 py-4 flex justify-between items-center">
 
-<div class="flex gap-4 items-center">
-<input id="search" placeholder="Поиск..." autocomplete="off"
-class="px-4 py-2 rounded-xl text-sm">
-
-<div id="bell" class="hidden cursor-pointer relative">
-🔔
-<span id="notifCount"
-class="absolute -top-2 -right-2 bg-red-600 text-xs px-2 rounded-full"></span>
+<div class="text-2xl font-black tracking-wider">
+<span class="text-purple-400">ANIME</span>ZEN
 </div>
 
-<button id="adminBtn" onclick="toggleModal('adminModal')"
+<div class="flex items-center gap-4">
+<input id="searchInput"
+type="text"
+placeholder="Поиск..."
+autocomplete="off"
+class="px-4 py-2 rounded-xl text-sm">
+
+<button id="adminBtn"
+onclick="toggleModal('adminModal')"
 class="hidden bg-purple-600 px-4 py-2 rounded-xl text-sm">
 Админ
 </button>
 
-<button id="authBtn" onclick="toggleModal('authModal')"
+<button id="authBtn"
+onclick="toggleModal('authModal')"
 class="bg-purple-600 px-4 py-2 rounded-xl text-sm">
 Войти
 </button>
 
-<button id="logoutBtn" onclick="logout()"
+<button id="logoutBtn"
+onclick="logout()"
 class="hidden bg-red-600 px-4 py-2 rounded-xl text-sm">
 Выйти
 </button>
 </div>
 </header>
 
-<section class="pt-32 max-w-6xl mx-auto px-8 pb-10">
-<h2 class="text-2xl text-purple-400 mb-6 font-bold">Новости</h2>
-<div id="newsContainer" class="space-y-6"></div>
+<!-- HERO -->
+<section class="pt-40 pb-24 text-center">
+<h1 class="text-6xl font-black bg-gradient-to-r from-white to-purple-500 bg-clip-text text-transparent">
+ANIMEZEN
+</h1>
+<p class="mt-6 text-gray-400">
+Твоя личная аниме-библиотека в облаке
+</p>
 </section>
 
+<!-- GRID -->
 <section class="max-w-7xl mx-auto px-8 pb-20">
 <div id="animeGrid" class="grid grid-cols-2 md:grid-cols-5 gap-8"></div>
 </section>
 
-<!-- AUTH -->
+<!-- AUTH MODAL -->
 <div id="authModal" class="modal">
-<div class="bg-[#181822] p-10 rounded-3xl w-96">
-<h2 id="authTitle" class="text-xl mb-6 text-purple-400 font-bold">Вход</h2>
+<div class="bg-[#141420] p-10 rounded-3xl w-96">
 
-<input id="authEmail" type="email" placeholder="Email" class="w-full p-3 mb-4 rounded-xl">
-<input id="authPassword" type="password" placeholder="Пароль" class="w-full p-3 mb-6 rounded-xl">
+<h2 class="text-xl mb-6 text-purple-400 font-bold">Авторизация</h2>
 
-<button id="authBtnAction" onclick="authAction()"
-class="w-full bg-purple-600 py-3 rounded-xl font-bold">
+<input id="email" type="email" placeholder="Email"
+autocomplete="username"
+class="w-full p-3 mb-4 rounded-xl">
+
+<input id="password" type="password" placeholder="Пароль"
+autocomplete="current-password"
+class="w-full p-3 mb-6 rounded-xl">
+
+<button onclick="login()" class="w-full bg-purple-600 py-3 rounded-xl font-bold">
 Войти
 </button>
 
-<p id="switchAuth" onclick="toggleAuthMode()"
-class="mt-6 text-center text-gray-400 cursor-pointer">
-Нет аккаунта? Создайте!
-</p>
+<hr class="my-6 border-gray-700">
+
+<input id="regEmail" type="email" placeholder="Email"
+autocomplete="off"
+class="w-full p-3 mb-4 rounded-xl">
+
+<input id="regPassword" type="password" placeholder="Пароль"
+autocomplete="new-password"
+class="w-full p-3 mb-6 rounded-xl">
+
+<button onclick="register()" class="w-full bg-purple-600 py-3 rounded-xl font-bold">
+Регистрация
+</button>
+
 </div>
 </div>
 
 <!-- ADMIN -->
 <div id="adminModal" class="modal">
-<div class="bg-[#181822] p-10 rounded-3xl w-[500px] max-h-[90vh] overflow-y-auto">
+<div class="bg-[#141420] p-10 rounded-3xl w-96">
 
-<h2 class="text-xl text-purple-400 mb-4 font-bold">Добавить аниме</h2>
+<h2 class="text-xl mb-6 text-purple-400 font-bold">Добавить аниме</h2>
 
-<input id="aTitle" placeholder="Название"
-class="w-full p-3 mb-3 rounded-xl">
+<input id="aTitle" placeholder="Название" class="w-full p-3 mb-3 rounded-xl">
+<input id="aImg" placeholder="URL постера" class="w-full p-3 mb-3 rounded-xl">
+<input id="aFrame" placeholder="Rutube embed ссылка" class="w-full p-3 mb-6 rounded-xl">
 
-<input id="aPoster" placeholder="URL постера"
-class="w-full p-3 mb-3 rounded-xl">
-
-<textarea id="aEpisodes"
-placeholder="Серии (каждая строка = embed ссылка Rutube)"
-class="w-full p-3 mb-4 rounded-xl h-32"></textarea>
-
-<button onclick="addAnime()"
-class="w-full bg-purple-600 py-3 rounded-xl font-bold">
+<button onclick="addAnime()" class="w-full bg-purple-600 py-3 rounded-xl font-bold">
 Добавить
-</button>
-
-<hr class="my-8 border-gray-700">
-
-<h2 class="text-xl text-purple-400 mb-4 font-bold">Добавить новость</h2>
-
-<input id="newsTitle" placeholder="Заголовок"
-class="w-full p-3 mb-3 rounded-xl">
-
-<textarea id="newsText" placeholder="Текст"
-class="w-full p-3 mb-3 rounded-xl h-28"></textarea>
-
-<input id="newsImg" placeholder="URL изображения"
-class="w-full p-3 mb-4 rounded-xl">
-
-<button onclick="addNews()"
-class="w-full bg-purple-600 py-3 rounded-xl font-bold">
-Опубликовать
 </button>
 
 </div>
@@ -140,149 +203,77 @@ projectId:"animezen-97635"
 
 const auth=firebase.auth();
 const db=firebase.database();
-const ADMIN_EMAIL="rdzaurov093@gmail.com";
+const ADMIN="rdzaurov093@gmail.com";
 
-let currentUser=null;
-let isLogin=true;
+auth.onAuthStateChanged(user=>{
+if(user){
+authBtn.classList.add("hidden");
+logoutBtn.classList.remove("hidden");
+if(user.email===ADMIN){
+adminBtn.classList.remove("hidden");
+}
+}else{
+authBtn.classList.remove("hidden");
+logoutBtn.classList.add("hidden");
+adminBtn.classList.add("hidden");
+}
+});
+
+function login(){
+auth.signInWithEmailAndPassword(email.value,password.value)
+.then(()=>toggleModal('authModal'))
+.catch(e=>alert(e.message));
+}
+
+function register(){
+auth.createUserWithEmailAndPassword(regEmail.value,regPassword.value)
+.then(()=>toggleModal('authModal'))
+.catch(e=>alert(e.message));
+}
+
+function logout(){ auth.signOut(); }
+
+function addAnime(){
+db.ref("animeList").push({
+title:aTitle.value,
+img:aImg.value,
+frame:aFrame.value
+});
+toggleModal('adminModal');
+}
+
+db.ref("animeList").on("value",snap=>{
+animeGrid.innerHTML="";
+const data=snap.val();
+if(!data) return;
+
+Object.entries(data).reverse().forEach(([key,item])=>{
+animeGrid.innerHTML+=`
+<div class="anime-card cursor-pointer relative"
+onclick="openPlayer('${item.frame}')">
+<img src="${item.img}" class="rounded-2xl">
+<div class="absolute bottom-0 p-3 bg-gradient-to-t from-black to-transparent w-full rounded-b-2xl">
+${item.title}
+</div>
+</div>`;
+});
+});
+
+function openPlayer(url){
+playerFrame.src=url;
+toggleModal('playerModal');
+}
 
 function toggleModal(id){
 document.getElementById(id).classList.toggle("active");
 }
 
-function toggleAuthMode(){
-isLogin=!isLogin;
-document.getElementById("authTitle").innerText=isLogin?"Вход":"Регистрация";
-document.getElementById("authBtnAction").innerText=isLogin?"Войти":"Создать";
-document.getElementById("switchAuth").innerText=
-isLogin?"Нет аккаунта? Создайте!":"Есть аккаунт? Войдите!";
-}
-
-function authAction(){
-const email=authEmail.value;
-const pass=authPassword.value;
-
-if(isLogin){
-auth.signInWithEmailAndPassword(email,pass)
-.then(()=>toggleModal("authModal"))
-.catch(e=>alert(e.message));
-}else{
-auth.createUserWithEmailAndPassword(email,pass)
-.then(()=>toggleModal("authModal"))
-.catch(e=>alert(e.message));
-}
-}
-
-function logout(){auth.signOut()}
-
-auth.onAuthStateChanged(user=>{
-currentUser=user;
-
-if(user){
-authBtn.classList.add("hidden");
-logoutBtn.classList.remove("hidden");
-bell.classList.remove("hidden");
-
-if(user.email===ADMIN_EMAIL){
-adminBtn.classList.remove("hidden");
-}
-loadNotifications();
-}else{
-authBtn.classList.remove("hidden");
-logoutBtn.classList.add("hidden");
-adminBtn.classList.add("hidden");
-bell.classList.add("hidden");
-}
-});
-
-function addAnime(){
-const title=aTitle.value;
-const poster=aPoster.value;
-const episodes=aEpisodes.value.split("\n").filter(e=>e);
-
-const ref=db.ref("anime").push();
-ref.set({title,poster});
-
-episodes.forEach(ep=>{
-ref.child("episodes").push({embed:ep});
-});
-
-alert("Добавлено");
-}
-
-db.ref("anime").on("value",snap=>{
-animeGrid.innerHTML="";
-snap.forEach(child=>{
-const id=child.key;
-const data=child.val();
-
-animeGrid.innerHTML+=`
-<div class="card bg-[#181822] p-4 rounded-2xl">
-<img src="${data.poster}" class="rounded-xl mb-4">
-<h3 class="font-bold mb-2">${data.title}</h3>
-<button onclick="subscribe('${id}')" 
-class="bg-purple-600 px-3 py-1 rounded-lg text-sm mb-2">
-Подписаться
-</button>
-<div id="episodes-${id}" class="space-y-2"></div>
-</div>
-`;
-
-if(data.episodes){
-Object.entries(data.episodes).forEach(([eid,ep],i)=>{
-document.getElementById(`episodes-${id}`).innerHTML+=
-`<button onclick="play('${ep.embed}')"
-class="block bg-gray-700 px-3 py-1 rounded-lg text-sm w-full">
-Серия ${i+1}
-</button>`;
-});
-}
+searchInput.addEventListener("input", e=>{
+const val=e.target.value.toLowerCase();
+document.querySelectorAll(".anime-card").forEach(card=>{
+card.style.display=card.innerText.toLowerCase().includes(val)?"block":"none";
 });
 });
-
-function play(url){
-playerFrame.src=url;
-toggleModal("playerModal");
-}
-
-function subscribe(animeId){
-if(!currentUser)return alert("Войдите");
-
-db.ref("subscriptions/"+currentUser.uid+"/"+animeId).set(true);
-alert("Вы подписались!");
-}
-
-function addNews(){
-db.ref("news").push({
-title:newsTitle.value,
-text:newsText.value,
-image:newsImg.value
-});
-alert("Новость добавлена");
-}
-
-db.ref("news").on("value",snap=>{
-newsContainer.innerHTML="";
-snap.forEach(child=>{
-const n=child.val();
-newsContainer.innerHTML+=`
-<div class="bg-[#181822] p-6 rounded-2xl">
-<h3 class="font-bold mb-2">${n.title}</h3>
-<p class="mb-3 text-gray-300">${n.text}</p>
-${n.image?`<img src="${n.image}" class="rounded-xl">`:""}
-</div>`;
-});
-});
-
-function loadNotifications(){
-db.ref("notifications/"+currentUser.uid).on("value",snap=>{
-if(!snap.exists()){
-notifCount.innerText="";
-return;
-}
-const count=snap.numChildren();
-notifCount.innerText=count;
-});
-}
 </script>
 
 </body>
